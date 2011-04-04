@@ -10,8 +10,5 @@ Tested in Ubuntu Jaunty Jackalope, requires the following packages:
  python-gd
  python-opencv
  fonttools
- sqlite3
- python-sqlite
- python-wxgtk2.8
 
 Probably other stuff that I can't think of right now.

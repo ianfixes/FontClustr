@@ -16,7 +16,7 @@
 #    the Free Software Foundation, either version 3 of the License, or
 #    (at your option) any later version.
 #
-#    FontClustr is distributed in the hope that it will be useful,
+#    FontClustr is distributed in the hope that it will be useful,                                                               
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #    GNU General Public License for more details.
@@ -53,10 +53,8 @@ def mkCharSet():
     ret = ""
     for i, c in enumerate(uc):
         ret = ret + c + lc[i]
-    
-    #return "AaBbCc"
-    #return ret + "1234567890" # "AaBbCc"
-    return "AaBbCcGgHhKkOoPpTtXx"
+        
+    return ret + "1234567890" # "AaBbCc"
 
 #for the realFontName function
 FONT_SPECIFIER_NAME_ID = 4
@@ -70,8 +68,6 @@ CHAR_IMG_EXT = ".bmp"
 PROCESS_CACHE_FILE = FONT_CACHE_DIR + os.path.sep + "4_hours_worth_of_data.pkl"
 TREE_CACHE_FILE = FONT_CACHE_DIR + os.path.sep + "master_tree.pkl"
 
-CACHE_LIMIT = 1200000
-
 #makes a directory even if it's already there
 def mkdir(path):
     try:
@@ -80,121 +76,127 @@ def mkdir(path):
         if err.errno != errno.EEXIST:
             raise
 
-
-class cv_char(object):
-    def __init__(self, fontname, charname):
-        self.c = charname
-        self.fontname = fontname
-        self.filename = str(charFile(fontname, charname))
-
-        self.img = None
-        self.edg = None
-        self.sto = None
-        self.cnt = None
-        self.tre = None
+"""
+#display an image for the user
+def viewFile(filename):
+    img = PythonMagic.Image(filename)
+    img.display()
 
 
+highgui.cvStartWindowThread()
+
+def viewCV(img):
+    name = "win" + time.ctime()
+    highgui.cvNamedWindow(name)
+    highgui.cvShowImage(name, img)
+    highgui.cvWaitKey(0)
+"""
+
+def fontDistance(font1, font2):
+    dist = 0
+    for c in CHAR_SET:
+        dist = dist + charDistance(charFile(font1, c), charFile(font2, c))
+
+    return dist
+
+#if all the font characters are the same (probably boxes) the font is useless
+def isNullFont(fontname):
+    c0 = CHAR_SET[0]
+    for c in CHAR_SET[1:50]:
+        if 0 < charDistance(charFile(fontname, c0), charFile(fontname, c)):
+            return False
+    print fontname, "seems null"
+    return True
+                                 
+
+#contour tree matching cost between 2 characters
+def charDistance(file1, file2, doLogPolar = False):       
+    #have to keep these around to prevent segfaults when storage drops out of scope
+    img = {}
+    edg = {}
+    sto = {}
+    cnt = {}
+    tre = {}
+    
     #poor result
-    def shape_distance_from(self, another_cv_char, match_method = cv.CV_CONTOURS_MATCH_I3):
-        #match_method can also be cv.CV_CONTOURS_MATCH_I1 or I2
-        return cv.cvMatchShapes(
-            highgui.cvLoadImage(self.filename,            highgui.CV_LOAD_IMAGE_GRAYSCALE),
-            highgui.cvLoadImage(another_cv_char.filename, highgui.CV_LOAD_IMAGE_GRAYSCALE),
-            match_method,
-            0,
-            )
+    """
+    return cv.cvMatchShapes(
+        highgui.cvLoadImage(file1, highgui.CV_LOAD_IMAGE_GRAYSCALE),
+        highgui.cvLoadImage(file2, highgui.CV_LOAD_IMAGE_GRAYSCALE),
+        #cv.CV_CONTOURS_MATCH_I1,
+        #cv.CV_CONTOURS_MATCH_I2,
+        cv.CV_CONTOURS_MATCH_I3,
+        0,
+        )
+        """
 
-    def contour_distance_from(self, another_cv_char, 
-                              method = cv.CV_CONTOURS_MATCH_I2, 
-                              doLogPolar = False):
-        #method can also be cv.CV_CONTOURS_MATCH_I1 or I3
-        self.make_contour(doLogPolar)
-        another_cv_char.make_contour(doLogPolar)
-        return cv.cvMatchShapes(self.cnt, another_cv_char.cnt, method, 0)
+    #get files
+    def getContour(somefile):
+        #print somefile
+        somefile = str(somefile)
 
+        # doesn't seem to produce improvement... actually, i think it hurts 
+        def toLogPolar(img):
+            scale = CHAR_IMG_SIZE / math.log(CHAR_IMG_SIZE)
 
-    # this method may be better, but causes a lot of crashes in the openCV library...
-    def tree_distance_from(self, another_cv_char):
-        self.make_tree()
-        another_cv_char.make_tree()
-        return cv.cvMatchContourTrees(self.tre, another_cv_char.tre, 1, 0)
-        
+            #convert to color, else logpolar crashes
+            clr = cv.cvCreateImage(cv.cvSize(CHAR_IMG_SIZE, CHAR_IMG_SIZE), 8, 3);
+            cv.cvCvtColor(img, clr, cv.CV_GRAY2RGB)
+            
+            dst = cv.cvCreateImage(cv.cvSize(CHAR_IMG_SIZE, CHAR_IMG_SIZE), 8, 3);
+            cv.cvLogPolar(clr, dst, 
+                          cv.cvPoint2D32f(CHAR_IMG_SIZE / 2, CHAR_IMG_SIZE / 2), 
+                          scale, cv.CV_WARP_FILL_OUTLIERS)
 
-    # doesn't seem to produce improvement... actually, i think it hurts 
-    def toLogPolar(img):
-        scale = CHAR_IMG_SIZE / math.log(CHAR_IMG_SIZE)
-        
-        #convert to color, else logpolar crashes
-        clr = cv.cvCreateImage(cv.cvSize(CHAR_IMG_SIZE, CHAR_IMG_SIZE), 8, 3);
-        cv.cvCvtColor(img, clr, cv.CV_GRAY2RGB)
-        
-        dst = cv.cvCreateImage(cv.cvSize(CHAR_IMG_SIZE, CHAR_IMG_SIZE), 8, 3);
-        cv.cvLogPolar(clr, dst, 
-                      cv.cvPoint2D32f(CHAR_IMG_SIZE / 2, CHAR_IMG_SIZE / 2), 
-                      scale, cv.CV_WARP_FILL_OUTLIERS)
+            #convert to grayscale
+            gry = cv.cvCreateImage(cv.cvGetSize(dst), 8, 1);
+            cv.cvCvtColor(dst, gry, cv.CV_RGB2GRAY)
+            return gry
 
-        #convert to grayscale
-        gry = cv.cvCreateImage(cv.cvGetSize(dst), 8, 1);
-        cv.cvCvtColor(dst, gry, cv.CV_RGB2GRAY)
-        return gry
-
-
-    def make_contour(self, doLogPolar):
-        if None != self.cnt:
-            return
-
-        self.img = highgui.cvLoadImage(self.filename, highgui.CV_LOAD_IMAGE_GRAYSCALE)
+        img[somefile] = highgui.cvLoadImage(somefile, highgui.CV_LOAD_IMAGE_GRAYSCALE)
         if doLogPolar:
-            self.img = toLogPolar(self.img)
+            img[somefile] = toLogPolar(img[somefile])
 
         #image is already white on black, so i guess we dont need this
-        #self.edg = cv.cvCreateImage(cv.cvGetSize(self.img), 8, 1)
-        #cv.cvThreshold(self.img, self.edg, 1, 255, cv.CV_THRESH_BINARY)
+        edg[somefile] = cv.cvCreateImage(cv.cvGetSize(img[somefile]), 8, 1)
+        cv.cvThreshold(img[somefile], edg[somefile], 1, 255, cv.CV_THRESH_BINARY)
 
-        self.sto = cv.cvCreateMemStorage (0)
-        nb_contours, self.cnt = cv.cvFindContours (self.img, #self.edg,
-                                                        self.sto,
+        sto[somefile] = cv.cvCreateMemStorage (0)
+        nb_contours, cnt[somefile] = cv.cvFindContours (img[somefile], #edg[somefile],
+                                                        sto[somefile],
                                                         cv.sizeof_CvContour,
                                                         cv.CV_RETR_TREE,
                                                         cv.CV_CHAIN_APPROX_NONE,
                                                         cv.cvPoint (0,0))
+        #tre[somefile] = cv.cvCreateContourTree(cnt[somefile], sto[somefile], 0)
         
-        del self.img
-        self.img = None
         return
 
+    #make a tree... shorthand func
+    def makeTree(id):
+        tre[id] = cv.cvCreateContourTree(cnt[id], sto[id], 0)
+    
 
-    def make_tree(self):
-        if None == self.img:
-            self.make_contour()
-        if None == self.tre:
-            self.tre = cv.cvCreateContourTree(self.cnt, self.sto, 0)
+    getContour(file1)
+    getContour(file2)
 
-
-class cv_font(object):
-    def __init__(self, charset, fontname):
-        self.charset = charset
-        self.fontname = fontname
-        self.chars = {}
-        for c in self.charset:
-            self.chars[c] = cv_char(self.fontname, c)
-            
-    def distance_from(self, another_cv_font):
-        dist = 0
-        for c in self.charset:
-            dist = dist + self.chars[c].contour_distance_from(another_cv_font.chars[c])
-
-        return dist
+    return cv.cvMatchShapes(
+        cnt[file1],
+        cnt[file2],
+        #cv.CV_CONTOURS_MATCH_I1,
+        cv.CV_CONTOURS_MATCH_I2, #seems to work best in my hokey example
+        #cv.CV_CONTOURS_MATCH_I3,
+        0,
+        )
 
 
-#if all the font characters are the same (probably boxes) the font is useless
-def isNullFont(fontname):
-    c0 = cv_char(fontname, CHAR_SET[0])
-    for c in CHAR_SET[1:50]:
-        if 0 < c0.contour_distance_from(cv_char(fontname, c)):
-            return False
-    print " ---", fontname, "seems null"
-    return True
+    # this method may be better, but causes a lot of crashes in the openCV library...
+    """
+    makeTree(file1)
+    makeTree(file2)
+    print "cvMatchContourTrees"
+    return cv.cvMatchContourTrees(tre[file1], tre[file2], 1, 0)
+    """
 
 
 
@@ -230,7 +232,6 @@ def cacheFonts(allfonts):
             bb.yOff() - ((CHAR_IMG_SIZE - bb.height()) / 2),
             )
     
-        #FIXME: double this up to create a 1 px black border... should fix "elegante" problem
         img.crop(newbb)
         img.write(outname)
 
@@ -340,32 +341,21 @@ def makeFontMatrix(font_list):
     matrix = [[0 for col in range(numfonts)] for row in range(numfonts)]
     #matrix = [[0 for col in range(0, row)] for row in range(len(font_list))]
 
-    totalwork = (numfonts ** 2. - numfonts) / 2
+    totalwork = (numfonts ** 2. + numfonts) / 2
     donework = 0
-    
-    mycache = {}
-    def getCachedFont(name):
-        if not name in mycache:
-            if CACHE_LIMIT < len(CHAR_SET) * len(mycache) * CHAR_IMG_SIZE:
-                rmkey = mycache.keys()[0]
-                del mycache[rmkey]
-            mycache[name] = cv_font(CHAR_SET, name)
-        return mycache[name]
-
     #we could do this during init if we handled symmetry better during reduction
     for i, font in enumerate(font_list):
-        f1 = getCachedFont(font_list[i]) #cv_font(CHAR_SET, font_list[i])
-        del mycache[font_list[i]]
         for j in range(i, len(font_list)):
             if i == j:
                 matrix[i][j] = 0
             else:
                 #print font_list[i], ":: font_list.remove(\"" + font_list[j] + "\")"
-                f2 = getCachedFont(font_list[j]) #cv_font(CHAR_SET, font_list[j])
-                distance = f1.distance_from(f2)
+                f1 = font_list[i]
+                f2 = font_list[j]
+                distance = fontDistance(f1, f2)
                 donework = donework + 1
                 done = "[%02.2f%%] %d" % ((math.floor(donework / totalwork * 10000) / 100), numfonts - i)
-                print done, "\t", distance, "\t", f1.fontname, "::", f2.fontname
+                print done, "\t", distance, "\t", f1, "::", f2
                 matrix[i][j] = distance
                 matrix[j][i] = distance
 
