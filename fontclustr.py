@@ -133,6 +133,7 @@ def charDistance(file1, file2, doLogPolar = False):
     #get files
     def getContour(somefile):
         #print somefile
+        somefile = str(somefile)
 
         # doesn't seem to produce improvement... actually, i think it hurts 
         def toLogPolar(img):
@@ -219,6 +220,7 @@ def cacheFonts(allfonts):
 
     #crop an image, centering the character based on bounding box
     def centerChar(outname):
+        outname = str(outname)
         img = PythonMagick.Image(outname)
     
         bb = img.boundingBox()
@@ -232,7 +234,8 @@ def cacheFonts(allfonts):
     
         img.crop(newbb)
         img.write(outname)
-    
+
+    outfonts = []
 
     #go through fonts and generate/save each char
     mkdir(FONT_CACHE_DIR)
@@ -246,28 +249,41 @@ def cacheFonts(allfonts):
 
         if os.path.exists(fontdir + "/done"): 
             #print "skipping", percentdone, fontname
+            outfonts.append(fontname)
             continue
         
         print "cacheing", percentdone, fontname
 
-        mkdir(fontdir)
-        font = pygame.font.Font(pygame.font.match_font(fontname), 
-                                int(math.floor(CHAR_IMG_SIZE * SAFETY_MARGIN))
-                                )
+        try:
+            mkdir(fontdir)
+            font = pygame.font.Font(pygame.font.match_font(fontname), 
+                                    int(math.floor(CHAR_IMG_SIZE * SAFETY_MARGIN))
+                                    )
 
-        #make the images
-        for i, c in enumerate (CHAR_SET):
-            outname = fontdir + os.path.sep + c + CHAR_IMG_EXT
-            renderChar(font, c, outname)
+            #make the images
+            for i, c in enumerate (CHAR_SET):
+                outname = fontdir + os.path.sep + c + CHAR_IMG_EXT
+                renderChar(font, c, outname)
 
-        #trim the images
-        for i, c in enumerate (CHAR_SET):
-            outname = fontdir + os.path.sep + c + CHAR_IMG_EXT
-            centerChar(outname)
+            #trim the images
+            for i, c in enumerate (CHAR_SET):
+                outname = fontdir + os.path.sep + c + CHAR_IMG_EXT
+                centerChar(outname)
 
-        mkdir(fontdir + "/done")
+            mkdir(fontdir + "/done")
+
+        except KeyboardInterrupt:
+            raise
+        except:
+            print "               --- oops! ignoring.  err was", sys.exc_info()[0]
+        else:
+            outfonts.append(fontname)
+
+
 
     print "processing 100%  done after", int(processedfonts), "fonts"
+
+    return outfonts
 
 
 # turn pygame's "arialblack" into "Arial Black" so browsers can use it
@@ -295,10 +311,10 @@ def realFontName(afont):
 
     fontfile = pygame.font.match_font(afont)
     try:
-        return shortName(ttLib.TTFont(fontfile))[1] #seems to work better
+        return unicode(shortName(ttLib.TTFont(fontfile))[1]) #seems to work better
         #return shortName(ttLib.TTFont(fontfile))[0]
     except:
-        return afont
+        return unicode(afont)
 
 
 #get the 2 fonts with the smallest distance between them
@@ -706,26 +722,22 @@ def makeFontWebPages(font_list, font_matrix):
 pygame.init ()
 allfonts = pygame.font.get_fonts()
 
-#stupid hack.  
-# without these lines, PythonMagick.Image.boundingBox segfaults during caching
-allfonts.remove("droidsansjapanese") 
-allfonts.remove("lklug")
-allfonts.remove("marvosym")
-allfonts.remove("poke")
-allfonts.remove("swift")
 
 #stupid hack.
 # without these lines, something in opencv segfaults during distance calculation
 # it's probably because the elegante font is huge and goes off the edge of the bitmap
 # so it can and probably should be fixed.
-allfonts.remove("elegante")
+if "elegante" in allfonts: allfonts.remove("elegante")
 
 allfonts.sort()
 
 print "\nIt's GO TIME\n"
 
-cacheFonts(allfonts)
+goodfonts = cacheFonts(allfonts)
 
+print "\nAfter caching,", len(goodfonts), "of", len(allfonts), "fonts remain\n"
+
+allfonts = goodfonts
 
 try:
     print "Attempting to load data from cache"
@@ -806,11 +818,22 @@ def makeExampleImages(x):
     ret = "<span class='font_entry'>"
     for c in letters:
         ret = ret + "<img src='" + FONT_CACHE_DIR + "/" + fontname + "/" + c + CHAR_IMG_EXT + "' />"
-    return ret + fontlabel + "</span>"
+ 
+    try:
+        ret = ret + fontlabel + "</span>"
+    except:
+        print "fontlabel has type", type(fontlabel)
+        raise
+
+    return ret
+
 
 def makeExampleText(x):
     fontname = realFontName(somefonts[x]).replace("&", "&amp;")
-    ret = "<span class='font_entry'><span class='font_text' style='font-family:\"" + fontname + "\"'>"
+    css_fontname = fontname.replace("'", "\\000027")
+
+    ret = "<span class='font_entry'><span class='font_text' style='font-family:\"" 
+    ret = ret + css_fontname + "\"'>"
     for c in "AaBbCcDdEe":
         ret = ret + c
     return ret + "</span> (" + fontname + ")</span>"
