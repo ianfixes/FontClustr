@@ -1,0 +1,14 @@
+FontClustr was conceived in January 2010 by Ian Katz.
+ ifreecarve@gmail.com / http://tinylittlelife.org
+
+It uses computer vision algorithms to sort fonts by appearance.
+
+Tested in Ubuntu Jaunty Jackalope, requires the following packages:
+ python-pythonmagick
+ python-pygame
+ python-gd
+ python-gd
+ python-opencv
+ fonttools
+
+Probably other stuff that I can't think of right now.
