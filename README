@@ -12,3 +12,5 @@ Tested in Ubuntu Jaunty Jackalope, requires the following packages:
  fonttools
 
 Probably other stuff that I can't think of right now.
+
+Run FontClustr as "python fontclustr.py" or make fontclustr.py executable and run it directly.
