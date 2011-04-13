@@ -30,7 +30,7 @@
 import os
 import sys
 import time
-import PythonMagick
+import Image
 import gd
 import errno
 import math
@@ -74,6 +74,10 @@ TREE_CACHE_FILE = FONT_CACHE_DIR + os.path.sep + "master_tree.pkl"
 
 CACHE_LIMIT = 1200000
 
+def fuckoff(img):
+    img.show()
+    sys.exit(1)
+
 #makes a directory even if it's already there
 def mkdir(path):
     try:
@@ -82,11 +86,8 @@ def mkdir(path):
         if err.errno != errno.EEXIST:
             raise
 
-"""
-#display an image for the user
-def viewFile(filename):
-    img = PythonMagic.Image(filename)
-    img.display()
+class FontclustrBlankChar(Exception):
+    pass
 
 class cv_char(object):
     def __init__(self, fontname, charname):
@@ -99,9 +100,6 @@ class cv_char(object):
         self.sto = None
         self.cnt = None
         self.tre = None
-
-    def charFile(self):
-        return str(FontDB.fontDir(self.fontname) + os.path.sep + self.c + CHAR_IMG_EXT)
 
     #poor result
     def shape_distance_from(self, another_cv_char, match_method = opencv.CV_CONTOURS_MATCH_I3):
@@ -200,7 +198,7 @@ class cv_char(object):
         if os.path.exists(self.filename):
             return
 
-        #create a white-on-black image of a character in the given font, save to given filename
+        #create a white-on-black image of a character in the given font, double-sized
         def char_render():
             font = pygame.font.Font(pygame.font.match_font(self.fontname), 
                                     int(math.floor(CHAR_IMG_SIZE * SAFETY_MARGIN))
@@ -215,42 +213,55 @@ class cv_char(object):
             
             #MEMORY LEAK, no fault of mine.
             #http://pygame.motherhamster.org/bugzilla/show_bug.cgi?id=43
-            pygame.image.save(surface, self.filename)
+            #pygame.image.save(surface, self.filename)
+
+            return pygame.image.tostring(surface, "P")
 
 
-        #crop an image, centering the character based on bounding box
-        def char_center():
-            outname = str(self.filename)
-            img = PythonMagick.Image(outname)
+        #crop an image, centering the character based on bounding box, single-sized
+        def char_center(img_string):
+
+            img = Image.fromstring("P", (CHAR_IMG_SIZE * 2, CHAR_IMG_SIZE * 2), img_string)
+            img = img.point(lambda p: 255 if p > 0 else 0)  #threshold
+            img = img.convert("1")                          #to b/w
+
+            #get bounding box (left, top, right, bottom) and determine width and height (wd/ht)
+            bb = img.getbbox()
+            if None is bb:
+                raise FontclustrBlankChar
+            (bb_l, bb_t, bb_r, bb_b) = bb
+            wd = bb_r - bb_l
+            ht = bb_b - bb_t
+
+
+            if CHAR_IMG_SIZE < wd or CHAR_IMG_SIZE < ht:
+                #crop aggressively: imgsize minus a 1px border. calc new bounds
+                cis2 = CHAR_IMG_SIZE - 2
+                nb_l = bb_l - ((cis2 - wd) / 2)
+                nb_t = bb_t - ((cis2 - ht) / 2)
+                nb_r = nb_l + cis2
+                nb_b = nb_t + cis2
+                bb = (nb_l, nb_t, nb_r, nb_b)
+
+            img = img.crop(bb)
             
-            bb = img.boundingBox()
+            #now un-crop, to center it
+            (bb_l, bb_t, bb_r, bb_b) = bb
+            wd = bb_r - bb_l
+            ht = bb_b - bb_t
 
-            if CHAR_IMG_SIZE < bb.width and CHAR_IMG_SIZE < bb.height():
-                #simple case, just crop
-                newbb = PythonMagick._PythonMagick.Geometry(
-                    CHAR_IMG_SIZE, 
-                    CHAR_IMG_SIZE, 
-                    bb.xOff() - ((CHAR_IMG_SIZE - bb.width()) / 2),
-                    bb.yOff() - ((CHAR_IMG_SIZE - bb.height()) / 2),
-                    )
-                img.crop(newbb)
-            else:
-                #difficult case, crop aggressively then back off
-                newbb = PythonMagick._PythonMagick.Geometry(
-                    CHAR_IMG_SIZE - 2, 
-                    CHAR_IMG_SIZE - 2, 
-                    bb.xOff() - (((CHAR_IMG_SIZE - 2) - bb.width()) / 2),
-                    bb.yOff() - (((CHAR_IMG_SIZE - 2) - bb.height()) / 2),
-                    )
-                img.crop(newbb)
+            #offsets will be negative
+            nb_l = (wd - CHAR_IMG_SIZE) / 2
+            nb_t = (ht - CHAR_IMG_SIZE) / 2
+            nb_r = nb_l + CHAR_IMG_SIZE
+            nb_b = nb_t + CHAR_IMG_SIZE
 
-                #newbb2 = PythonMagick._PythonMagick.Geometry(CHAR_IMG_SIZE, CHAR_IMG_SIZE, 1, 1)
-                #img.crop(newbb2)
+            img = img.crop((nb_l, nb_t, nb_r, nb_b))
+                
+            img.save(self.get_cache_file())
+            #fuckoff(img)
 
-            img.write(outname)
-
-        char_render()
-        char_center()
+        char_center(char_render())
 
 
  
@@ -259,7 +270,6 @@ class cv_char(object):
         relative = FONT_CACHE_DIR + os.path.sep + self.fontname + os.path.sep + self.c + CHAR_IMG_EXT
         absolute = os.getcwd() + os.path.sep + relative
         return relative
-
 
 
 
@@ -348,34 +358,6 @@ class cv_font(object):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#if all the font characters are the same (probably boxes) the font is useless
-#def isNullFont(fontname):
-#    c0 = cv_char(fontname, CHAR_SET[0])
-#    for c in CHAR_SET[1:50]:
-#        if 0 < c0.contour_distance_from(cv_char(fontname, c)):
-#            return False
-#    print " ---", fontname, "seems null"
-#    return True
-
-
-
-
 def cacheFonts(allfonts):    
     outfonts = []
     mkdir(FONT_CACHE_DIR)
@@ -402,87 +384,6 @@ def cacheFonts(allfonts):
     
     return outfonts
 
-
-
-#def cacheFonts(allfonts):
-#     #create a white-on-black image of a character in the given font, save to given filename
-#     def renderChar(font, c, outname):
-#         surface = pygame.Surface ((CHAR_IMG_SIZE * 2, CHAR_IMG_SIZE * 2), depth=8)
-#         surface.fill ((0, 0, 0))
-        
-#         sf = font.render (c, False, (255, 255, 255))
-#         surface.blit (sf, (CHAR_IMG_SIZE * 0.5, CHAR_IMG_SIZE * 0.5))
-        
-#         pygame.image.save(surface, outname)
-
-
-#     #crop an image, centering the character based on bounding box
-#     def centerChar(outname):
-#         outname = str(outname)
-#         img = PythonMagick.Image(outname)
-    
-#         bb = img.boundingBox()
-    
-#         newbb = PythonMagick._PythonMagick.Geometry(
-#             CHAR_IMG_SIZE, 
-#             CHAR_IMG_SIZE, 
-#             bb.xOff() - ((CHAR_IMG_SIZE - bb.width()) / 2),
-#             bb.yOff() - ((CHAR_IMG_SIZE - bb.height()) / 2),
-#             )
-    
-#         #FIXME: double this up to create a 1 px black border... should fix "elegante" problem
-#         img.crop(newbb)
-#         img.write(outname)
-
-#     outfonts = []
-
-#     #go through fonts and generate/save each char
-#     mkdir(FONT_CACHE_DIR)
-#     totalfonts = len(allfonts)
-#     processedfonts = 0.0
-#     for fontname in allfonts:
-#         percentdone = "[%02.0f%%]" % math.floor(processedfonts / totalfonts * 100)
-#         processedfonts = processedfonts + 1
-
-#         fontdir = FONT_CACHE_DIR + os.path.sep + fontname
-
-#         if os.path.exists(fontdir + "/done"): 
-#             #print "skipping", percentdone, fontname
-#             outfonts.append(fontname)
-#             continue
-        
-#         print "cacheing", percentdone, fontname
-
-#         try:
-#             mkdir(fontdir)
-#             font = pygame.font.Font(pygame.font.match_font(fontname), 
-#                                     int(math.floor(CHAR_IMG_SIZE * SAFETY_MARGIN))
-#                                     )
-
-#             #make the images
-#             for i, c in enumerate (CHAR_SET):
-#                 outname = fontdir + os.path.sep + c + CHAR_IMG_EXT
-#                 renderChar(font, c, outname)
-
-#             #trim the images
-#             for i, c in enumerate (CHAR_SET):
-#                 outname = fontdir + os.path.sep + c + CHAR_IMG_EXT
-#                 centerChar(outname)
-
-#             mkdir(fontdir + "/done")
-
-#         except KeyboardInterrupt:
-#             raise
-#         except:
-#             print "               --- oops! ignoring.  err was", sys.exc_info()[0]
-#         else:
-#             outfonts.append(fontname)
-
-
-
-#     print "processing 100%  done after", int(processedfonts), "fonts"
-
-#     return outfonts
 
 
 # turn pygame's "arialblack" into "Arial Black" so browsers can use it
