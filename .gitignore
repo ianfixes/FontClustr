@@ -3,3 +3,5 @@ cache
 tree*.html
 4_hours_worth_of_data.pkl
 master_tree.pkl
+fontclustr.db
+fontclustr.db-journal
