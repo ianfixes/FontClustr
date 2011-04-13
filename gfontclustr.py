@@ -47,15 +47,8 @@ import fontclustr
 
 DB_FILENAME = "fontclustr.db"
 
-FONT_CACHE_DIR = "cache"
-CHAR_IMG_EXT = ".png"
-CHAR_IMG_SIZE = 100
-SAFETY_MARGIN = 0.85
-CACHE_LIMIT = 1200000
 
-
-
-
+CACHE_CHAR_LIMIT = 2000000
 
 
 #exception for aborting
@@ -130,7 +123,7 @@ class FontDB(object):
         c.execute("update font set present = 0")
         i = 0
 
-        self.mkdir(FONT_CACHE_DIR)
+        self.mkdir(fontclustr.FONT_CACHE_DIR)
 
         for f in fontlist:
             #prep db record
@@ -260,7 +253,7 @@ class FontDB(object):
                 #print "hit!\t\t", pygame_name
             else:
                 #print "\tmiss!\t" + pygame_name
-                if CACHE_LIMIT < len(self.FullCharset()) * len(mycache) * CHAR_IMG_SIZE:
+                if CACHE_CHAR_LIMIT < len(self.FullCharset()) * len(mycache):
                     rmkey = mycache.keys()[0]
                     del mycache[rmkey]
                 mycache[pygame_name] = fontclustr.cv_font(self.CharsetOf(charset_id), pygame_name)
