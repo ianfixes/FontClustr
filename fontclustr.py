@@ -39,7 +39,9 @@ import string
 import numpy
 import pickle
 
-from opencv import cv
+import cv
+import opencv
+#from opencv import cv
 from opencv import highgui
 from fontTools import ttLib
 
@@ -66,7 +68,7 @@ FONT_CACHE_DIR = "cache"
 CHAR_IMG_SIZE = 100
 SAFETY_MARGIN = 0.85
 CHAR_SET = mkCharSet()
-CHAR_IMG_EXT = ".bmp"
+CHAR_IMG_EXT = ".png"
 PROCESS_CACHE_FILE = FONT_CACHE_DIR + os.path.sep + "4_hours_worth_of_data.pkl"
 TREE_CACHE_FILE = FONT_CACHE_DIR + os.path.sep + "master_tree.pkl"
 
@@ -85,7 +87,7 @@ class cv_char(object):
     def __init__(self, fontname, charname):
         self.c = charname
         self.fontname = fontname
-        self.filename = str(charFile(fontname, charname))
+        self.filename = self.get_cache_file() #str(charFile(fontname, charname))
 
         self.img = None
         self.edg = None
@@ -93,11 +95,13 @@ class cv_char(object):
         self.cnt = None
         self.tre = None
 
+    def charFile(self):
+        return str(FontDB.fontDir(self.fontname) + os.path.sep + self.c + CHAR_IMG_EXT)
 
     #poor result
-    def shape_distance_from(self, another_cv_char, match_method = cv.CV_CONTOURS_MATCH_I3):
-        #match_method can also be cv.CV_CONTOURS_MATCH_I1 or I2
-        return cv.cvMatchShapes(
+    def shape_distance_from(self, another_cv_char, match_method = opencv.CV_CONTOURS_MATCH_I3):
+        #match_method can also be opencv.CV_CONTOURS_MATCH_I1 or I2
+        return opencv.cv.cvMatchShapes(
             highgui.cvLoadImage(self.filename,            highgui.CV_LOAD_IMAGE_GRAYSCALE),
             highgui.cvLoadImage(another_cv_char.filename, highgui.CV_LOAD_IMAGE_GRAYSCALE),
             match_method,
@@ -105,19 +109,19 @@ class cv_char(object):
             )
 
     def contour_distance_from(self, another_cv_char, 
-                              method = cv.CV_CONTOURS_MATCH_I2, 
+                              method = opencv.CV_CONTOURS_MATCH_I2, 
                               doLogPolar = False):
-        #method can also be cv.CV_CONTOURS_MATCH_I1 or I3
+        #method can also be opencv.CV_CONTOURS_MATCH_I1 or I3
         self.make_contour(doLogPolar)
         another_cv_char.make_contour(doLogPolar)
-        return cv.cvMatchShapes(self.cnt, another_cv_char.cnt, method, 0)
+        return opencv.cv.cvMatchShapes(self.cnt, another_cv_char.cnt, method, 0)
 
 
     # this method may be better, but causes a lot of crashes in the openCV library...
     def tree_distance_from(self, another_cv_char):
         self.make_tree()
         another_cv_char.make_tree()
-        return cv.cvMatchContourTrees(self.tre, another_cv_char.tre, 1, 0)
+        return opencv.cvMatchContourTrees(self.tre, another_cv_char.tre, 1, 0)
         
 
     # doesn't seem to produce improvement... actually, i think it hurts 
@@ -125,40 +129,49 @@ class cv_char(object):
         scale = CHAR_IMG_SIZE / math.log(CHAR_IMG_SIZE)
         
         #convert to color, else logpolar crashes
-        clr = cv.cvCreateImage(cv.cvSize(CHAR_IMG_SIZE, CHAR_IMG_SIZE), 8, 3);
-        cv.cvCvtColor(img, clr, cv.CV_GRAY2RGB)
+        clr = opencv.cvCreateImage(opencv.cvSize(CHAR_IMG_SIZE, CHAR_IMG_SIZE), 8, 3);
+        opencv.cvCvtColor(img, clr, opencv.CV_GRAY2RGB)
         
         dst = cv.cvCreateImage(cv.cvSize(CHAR_IMG_SIZE, CHAR_IMG_SIZE), 8, 3);
-        cv.cvLogPolar(clr, dst, 
-                      cv.cvPoint2D32f(CHAR_IMG_SIZE / 2, CHAR_IMG_SIZE / 2), 
-                      scale, cv.CV_WARP_FILL_OUTLIERS)
+        opencv.cvLogPolar(clr, dst, 
+                      opencv.cvPoint2D32f(CHAR_IMG_SIZE / 2, CHAR_IMG_SIZE / 2), 
+                      scale, opencv.CV_WARP_FILL_OUTLIERS)
 
         #convert to grayscale
-        gry = cv.cvCreateImage(cv.cvGetSize(dst), 8, 1);
-        cv.cvCvtColor(dst, gry, cv.CV_RGB2GRAY)
+        gry = opencv.cvCreateImage(opencv.cvGetSize(dst), 8, 1);
+        opencv.cvCvtColor(dst, gry, opencv.CV_RGB2GRAY)
         return gry
 
+    def vassert(self, expr):
+        if not expr:
+            print "About to fail on", self.filename
+        assert(expr)
 
     def make_contour(self, doLogPolar):
         if None != self.cnt:
             return
 
-        self.img = highgui.cvLoadImage(self.filename, highgui.CV_LOAD_IMAGE_GRAYSCALE)
+        self.img = highgui.cvLoadImage(str(self.filename), highgui.CV_LOAD_IMAGE_GRAYSCALE)
         if doLogPolar:
             self.img = toLogPolar(self.img)
 
-        #image is already white on black, so i guess we dont need this
-        #self.edg = cv.cvCreateImage(cv.cvGetSize(self.img), 8, 1)
-        #cv.cvThreshold(self.img, self.edg, 1, 255, cv.CV_THRESH_BINARY)
+        self.vassert(self.img)
 
-        self.sto = cv.cvCreateMemStorage (0)
-        nb_contours, self.cnt = cv.cvFindContours (self.img, #self.edg,
-                                                        self.sto,
-                                                        cv.sizeof_CvContour,
-                                                        cv.CV_RETR_TREE,
-                                                        cv.CV_CHAIN_APPROX_NONE,
-                                                        cv.cvPoint (0,0))
-        
+        #image is already white on black, so i guess we dont need this
+        #self.edg = opencv.cvCreateImage(opencv.cvGetSize(self.img), 8, 1)
+        #opencv.cvThreshold(self.img, self.edg, 1, 255, opencv.CV_THRESH_BINARY)
+
+        self.sto = opencv.cvCreateMemStorage (0)
+        self.vassert(self.sto)
+        nb_contours, self.cnt = opencv.cvFindContours (self.img, #self.edg,
+                                                       self.sto,
+                                                       opencv.cv.sizeof_CvContour,
+                                                       opencv.CV_RETR_TREE,
+                                                       opencv.CV_CHAIN_APPROX_NONE,
+                                                       opencv.cvPoint(0,0))
+
+        self.vassert(self.cnt)
+
         del self.img
         self.img = None
         return
@@ -168,7 +181,78 @@ class cv_char(object):
         if None == self.img:
             self.make_contour()
         if None == self.tre:
-            self.tre = cv.cvCreateContourTree(self.cnt, self.sto, 0)
+            self.tre = opencv.cvCreateContourTree(self.cnt, self.sto, 0)
+
+
+
+    #make images from each character of a font
+    def cache(self):
+
+        if os.path.exists(self.filename):
+            return
+
+        #create a white-on-black image of a character in the given font, save to given filename
+        def char_render():
+            font = pygame.font.Font(pygame.font.match_font(self.fontname), 
+                                    int(math.floor(CHAR_IMG_SIZE * SAFETY_MARGIN))
+                                    )
+
+
+            surface = pygame.Surface ((CHAR_IMG_SIZE * 2, CHAR_IMG_SIZE * 2), depth=8)
+            surface.fill ((0, 0, 0))
+            
+            sf = font.render (self.c, False, (255, 255, 255))
+            surface.blit (sf, (CHAR_IMG_SIZE * 0.5, CHAR_IMG_SIZE * 0.5))
+            
+            #MEMORY LEAK, no fault of mine.
+            #http://pygame.motherhamster.org/bugzilla/show_bug.cgi?id=43
+            pygame.image.save(surface, self.filename)
+
+
+        #crop an image, centering the character based on bounding box
+        def char_center():
+            outname = str(self.filename)
+            img = PythonMagick.Image(outname)
+            
+            bb = img.boundingBox()
+
+            if CHAR_IMG_SIZE < bb.width and CHAR_IMG_SIZE < bb.height():
+                #simple case, just crop
+                newbb = PythonMagick._PythonMagick.Geometry(
+                    CHAR_IMG_SIZE, 
+                    CHAR_IMG_SIZE, 
+                    bb.xOff() - ((CHAR_IMG_SIZE - bb.width()) / 2),
+                    bb.yOff() - ((CHAR_IMG_SIZE - bb.height()) / 2),
+                    )
+                img.crop(newbb)
+            else:
+                #difficult case, crop aggressively then back off
+                newbb = PythonMagick._PythonMagick.Geometry(
+                    CHAR_IMG_SIZE - 2, 
+                    CHAR_IMG_SIZE - 2, 
+                    bb.xOff() - (((CHAR_IMG_SIZE - 2) - bb.width()) / 2),
+                    bb.yOff() - (((CHAR_IMG_SIZE - 2) - bb.height()) / 2),
+                    )
+                img.crop(newbb)
+
+                #newbb2 = PythonMagick._PythonMagick.Geometry(CHAR_IMG_SIZE, CHAR_IMG_SIZE, 1, 1)
+                #img.crop(newbb2)
+
+            img.write(outname)
+
+        char_render()
+        char_center()
+
+
+ 
+    #build filename for specific font/char
+    def get_cache_file(self):
+        relative = FONT_CACHE_DIR + os.path.sep + self.fontname + os.path.sep + self.c + CHAR_IMG_EXT
+        absolute = os.getcwd() + os.path.sep + relative
+        return relative
+
+
+
 
 
 class cv_font(object):
@@ -186,103 +270,210 @@ class cv_font(object):
 
         return dist
 
+    def is_null(self):
+        self.cache()
+        (_, c0) = self.chars.items()[0]
+        for _, c in self.chars.items()[1:]:
+            if 0 < c0.contour_distance_from(c):
+                return False
+        return True
+
+    def is_missing(self):
+        return None is pygame.font.match_font(self.fontname)
+
+    def cache(self):
+        
+        uniqueness = CHAR_IMG_EXT + "." + str(CHAR_IMG_SIZE) + "." + "".join(self.charset)
+        doneflag = self.get_cache_dir() + os.path.sep + "done" + uniqueness
+
+        if os.path.exists(doneflag):
+            #print "skipping", percentdone, fontname
+            return 
+
+        mkdir(self.get_cache_dir())
+        
+        for _, c in self.chars.iteritems():
+            c.cache()
+                
+        #mark as done... works unless user decides to delete some but not all dir contents
+        mkdir(doneflag)
+
+
+
+
+    def get_cache_dir(self):
+        return FONT_CACHE_DIR + os.path.sep + self.fontname
+
+
+    # turn pygame's "arialblack" into "Arial Black" so browsers can use it
+    def realName(self):
+        FONT_SPECIFIER_NAME_ID = 4
+        FONT_SPECIFIER_FAMILY_ID = 1
+
+        # http://starrhorne.com/posts/font_name_from_ttf_file/
+        def shortName(font):
+            """Get the short name from the font's names table"""
+            name = ""
+            family = ""
+            for record in font['name'].names:
+                if record.nameID == FONT_SPECIFIER_NAME_ID and not name:
+                    if '\000' in record.string:
+                        name = unicode(record.string, 'utf-16-be').encode('utf-8')
+                    else:
+                        name = record.string
+                elif record.nameID == FONT_SPECIFIER_FAMILY_ID and not family:
+                    if '\000' in record.string:
+                        family = unicode(record.string, 'utf-16-be').encode('utf-8')
+                    else:
+                        family = record.string
+                if name and family:
+                    break
+            return name, family
+
+        fontfile = pygame.font.match_font(self.fontname)
+        try:
+            return unicode(shortName(ttLib.TTFont(fontfile))[1]) #seems to work better
+            #return shortName(ttLib.TTFont(fontfile))[0]
+        except:
+            return unicode(self.fontname)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #if all the font characters are the same (probably boxes) the font is useless
-def isNullFont(fontname):
-    c0 = cv_char(fontname, CHAR_SET[0])
-    for c in CHAR_SET[1:50]:
-        if 0 < c0.contour_distance_from(cv_char(fontname, c)):
-            return False
-    print " ---", fontname, "seems null"
-    return True
+#def isNullFont(fontname):
+#    c0 = cv_char(fontname, CHAR_SET[0])
+#    for c in CHAR_SET[1:50]:
+#        if 0 < c0.contour_distance_from(cv_char(fontname, c)):
+#            return False
+#    print " ---", fontname, "seems null"
+#    return True
 
 
-
-#build filename for specific font/char
-def charFile(fontname, charname):
-    return FONT_CACHE_DIR + os.path.sep + fontname + os.path.sep + charname + CHAR_IMG_EXT
 
 
 def cacheFonts(allfonts):    
-
-    #create a white-on-black image of a character in the given font, save to given filename
-    def renderChar(font, c, outname):
-        surface = pygame.Surface ((CHAR_IMG_SIZE * 2, CHAR_IMG_SIZE * 2), depth=8)
-        surface.fill ((0, 0, 0))
-        
-        sf = font.render (c, False, (255, 255, 255))
-        surface.blit (sf, (CHAR_IMG_SIZE * 0.5, CHAR_IMG_SIZE * 0.5))
-        
-        pygame.image.save(surface, outname)
-
-
-    #crop an image, centering the character based on bounding box
-    def centerChar(outname):
-        outname = str(outname)
-        img = PythonMagick.Image(outname)
-    
-        bb = img.boundingBox()
-    
-        newbb = PythonMagick._PythonMagick.Geometry(
-            CHAR_IMG_SIZE, 
-            CHAR_IMG_SIZE, 
-            bb.xOff() - ((CHAR_IMG_SIZE - bb.width()) / 2),
-            bb.yOff() - ((CHAR_IMG_SIZE - bb.height()) / 2),
-            )
-    
-        #FIXME: double this up to create a 1 px black border... should fix "elegante" problem
-        img.crop(newbb)
-        img.write(outname)
-
     outfonts = []
-
-    #go through fonts and generate/save each char
     mkdir(FONT_CACHE_DIR)
     totalfonts = len(allfonts)
     processedfonts = 0.0
     for fontname in allfonts:
         percentdone = "[%02.0f%%]" % math.floor(processedfonts / totalfonts * 100)
         processedfonts = processedfonts + 1
-
-        fontdir = FONT_CACHE_DIR + os.path.sep + fontname
-
-        if os.path.exists(fontdir + "/done"): 
-            #print "skipping", percentdone, fontname
-            outfonts.append(fontname)
-            continue
-        
         print "cacheing", percentdone, fontname
 
         try:
-            mkdir(fontdir)
-            font = pygame.font.Font(pygame.font.match_font(fontname), 
-                                    int(math.floor(CHAR_IMG_SIZE * SAFETY_MARGIN))
-                                    )
-
-            #make the images
-            for i, c in enumerate (CHAR_SET):
-                outname = fontdir + os.path.sep + c + CHAR_IMG_EXT
-                renderChar(font, c, outname)
-
-            #trim the images
-            for i, c in enumerate (CHAR_SET):
-                outname = fontdir + os.path.sep + c + CHAR_IMG_EXT
-                centerChar(outname)
-
-            mkdir(fontdir + "/done")
+            fontobject = cv_font(CHAR_SET, fontname)
+            fontobject.cache()
 
         except KeyboardInterrupt:
             raise
         except:
+            #raise
             print "               --- oops! ignoring.  err was", sys.exc_info()[0]
         else:
             outfonts.append(fontname)
 
-
-
     print "processing 100%  done after", int(processedfonts), "fonts"
-
+    
     return outfonts
+
+
+
+#def cacheFonts(allfonts):
+#     #create a white-on-black image of a character in the given font, save to given filename
+#     def renderChar(font, c, outname):
+#         surface = pygame.Surface ((CHAR_IMG_SIZE * 2, CHAR_IMG_SIZE * 2), depth=8)
+#         surface.fill ((0, 0, 0))
+        
+#         sf = font.render (c, False, (255, 255, 255))
+#         surface.blit (sf, (CHAR_IMG_SIZE * 0.5, CHAR_IMG_SIZE * 0.5))
+        
+#         pygame.image.save(surface, outname)
+
+
+#     #crop an image, centering the character based on bounding box
+#     def centerChar(outname):
+#         outname = str(outname)
+#         img = PythonMagick.Image(outname)
+    
+#         bb = img.boundingBox()
+    
+#         newbb = PythonMagick._PythonMagick.Geometry(
+#             CHAR_IMG_SIZE, 
+#             CHAR_IMG_SIZE, 
+#             bb.xOff() - ((CHAR_IMG_SIZE - bb.width()) / 2),
+#             bb.yOff() - ((CHAR_IMG_SIZE - bb.height()) / 2),
+#             )
+    
+#         #FIXME: double this up to create a 1 px black border... should fix "elegante" problem
+#         img.crop(newbb)
+#         img.write(outname)
+
+#     outfonts = []
+
+#     #go through fonts and generate/save each char
+#     mkdir(FONT_CACHE_DIR)
+#     totalfonts = len(allfonts)
+#     processedfonts = 0.0
+#     for fontname in allfonts:
+#         percentdone = "[%02.0f%%]" % math.floor(processedfonts / totalfonts * 100)
+#         processedfonts = processedfonts + 1
+
+#         fontdir = FONT_CACHE_DIR + os.path.sep + fontname
+
+#         if os.path.exists(fontdir + "/done"): 
+#             #print "skipping", percentdone, fontname
+#             outfonts.append(fontname)
+#             continue
+        
+#         print "cacheing", percentdone, fontname
+
+#         try:
+#             mkdir(fontdir)
+#             font = pygame.font.Font(pygame.font.match_font(fontname), 
+#                                     int(math.floor(CHAR_IMG_SIZE * SAFETY_MARGIN))
+#                                     )
+
+#             #make the images
+#             for i, c in enumerate (CHAR_SET):
+#                 outname = fontdir + os.path.sep + c + CHAR_IMG_EXT
+#                 renderChar(font, c, outname)
+
+#             #trim the images
+#             for i, c in enumerate (CHAR_SET):
+#                 outname = fontdir + os.path.sep + c + CHAR_IMG_EXT
+#                 centerChar(outname)
+
+#             mkdir(fontdir + "/done")
+
+#         except KeyboardInterrupt:
+#             raise
+#         except:
+#             print "               --- oops! ignoring.  err was", sys.exc_info()[0]
+#         else:
+#             outfonts.append(fontname)
+
+
+
+#     print "processing 100%  done after", int(processedfonts), "fonts"
+
+#     return outfonts
 
 
 # turn pygame's "arialblack" into "Arial Black" so browsers can use it
@@ -725,144 +916,154 @@ def makeFontWebPages(font_list, font_matrix):
         
     mainindex.write("</ul></body></html>")
     mainindex.close()
+
                         
 
 ####################################
-          
-pygame.init ()
-allfonts = pygame.font.get_fonts()
+
+def mymain():
+
+    pygame.init ()
+    allfonts = pygame.font.get_fonts()
 
 
-#stupid hack.
-# without these lines, something in opencv segfaults during distance calculation
-# it's probably because the elegante font is huge and goes off the edge of the bitmap
-# so it can and probably should be fixed.
-if "elegante" in allfonts: allfonts.remove("elegante")
+    #stupid hack.
+    # without these lines, something in opencv segfaults during distance calculation
+    # it's probably because the elegante font is huge and goes off the edge of the bitmap
+    # so it can and probably should be fixed.
+    if "elegante" in allfonts: allfonts.remove("elegante")
 
-allfonts.sort()
+    allfonts.sort()
 
-print "\nIt's GO TIME\n"
+    print "\nIt's GO TIME\n"
 
-goodfonts = cacheFonts(allfonts)
+    goodfonts = cacheFonts(allfonts)
 
-print "\nAfter caching,", len(goodfonts), "of", len(allfonts), "fonts remain\n"
+    print "\nAfter caching,", len(goodfonts), "of", len(allfonts), "fonts remain\n"
 
-allfonts = goodfonts
+    allfonts = goodfonts
 
-try:
-    print "Attempting to load data from cache"
-    pkl_file = open(PROCESS_CACHE_FILE, 'rb')
-    (allfonts, font_matrix) = pickle.load(pkl_file)
-    pkl_file.close()
-except:
-    print "FAIL... build data and cache it"
-    #make it from scratch
+    try:
+        print "Attempting to load data from cache"
+        pkl_file = open(PROCESS_CACHE_FILE, 'rb')
+        (allfonts, font_matrix) = pickle.load(pkl_file)
+        pkl_file.close()
+    except:
+        print "FAIL... build data and cache it"
+        #make it from scratch
 
-    print "removing null fonts"
-    for f in allfonts:
-        if isNullFont(f):
-            allfonts.remove(f)
+        print "removing null fonts"
+        for f in allfonts:
+            if cv_font(CHAR_SET, f).is_null():
+                allfonts.remove(f)
 
-    print "done\n\n", len(allfonts), "fonts left\n"
+        print "done\n\n", len(allfonts), "fonts left\n"
 
+
+        """
+        #this code is an attempt to find out if distance == 0 is a good indicator of fonts
+        # that will cause distance calculation segfaults if we use cvMatchContourTrees
+        #
+        # UPDATE: it only found 2 suspect fonts when there are at least 100 in there
+        for i, font in enumerate(allfonts):
+            if i == 0: continue
+            if 0 == fontDistance(allfonts[i], allfonts[0]):
+                print allfonts[i], "is suspect"
+                break
+
+                """
+
+
+        font_matrix = makeFontMatrix(allfonts)
+
+        output = open(PROCESS_CACHE_FILE, 'wb')
+        pickle.dump((allfonts, font_matrix), output, -1)
+        output.close()
+
+    #makeFontWebPages(allfonts, font_matrix)
+
+    somefonts = allfonts
+
+    #reduced set for test runs
+    """
+    if False:
+        reducto = 100
+        somefonts = allfonts[:reducto]
+        font_matrix = font_matrix[:reducto]
+        for i, r in enumerate(font_matrix):
+            font_matrix[i] = r[:reducto]
 
     """
-    #this code is an attempt to find out if distance == 0 is a good indicator of fonts
-    # that will cause distance calculation segfaults if we use cvMatchContourTrees
-    #
-    # UPDATE: it only found 2 suspect fonts when there are at least 100 in there
-    for i, font in enumerate(allfonts):
-        if i == 0: continue
-        if 0 == fontDistance(allfonts[i], allfonts[0]):
-            print allfonts[i], "is suspect"
-            break
 
-            """
+    (somefonts, font_matrix) = deZeroify(somefonts, font_matrix)
+    (somefonts, font_matrix) = deMissingfontify(somefonts, font_matrix)
 
-
-    font_matrix = makeFontMatrix(allfonts)
-
-    output = open(PROCESS_CACHE_FILE, 'wb')
-    pickle.dump((allfonts, font_matrix), output, -1)
-    output.close()
-
-#makeFontWebPages(allfonts, font_matrix)
-
-somefonts = allfonts
-
-#reduced set for test runs
-"""
-if False:
-    reducto = 100
-    somefonts = allfonts[:reducto]
-    font_matrix = font_matrix[:reducto]
-    for i, r in enumerate(font_matrix):
-        font_matrix[i] = r[:reducto]
-
-"""
-
-(somefonts, font_matrix) = deZeroify(somefonts, font_matrix)
-(somefonts, font_matrix) = deMissingfontify(somefonts, font_matrix)
-
-try:
-    print "Attempting to load tree from cache"
-    pkl_file = open(TREE_CACHE_FILE, 'rb')
-    tree = pickle.load(pkl_file)
-    pkl_file.close()
-except:
-    print "Fail... Building huge tree and caching it"
-    tree = makeFontTree(somefonts, font_matrix)
-    
-    output = open(TREE_CACHE_FILE, 'wb')
-    pickle.dump(tree, output, -1)
-    output.close()
-
-
-tree.printout(lambda x: allfonts[x])
-
-
-def makeExampleImages(x):
-    letters = "AaBbCc"
-    fontname = somefonts[x]
-    fontlabel = realFontName(somefonts[x]).replace("&", "&amp;")
-    ret = "<span class='font_entry'>"
-    for c in letters:
-        ret = ret + "<img src='" + FONT_CACHE_DIR + "/" + fontname + "/" + c + CHAR_IMG_EXT + "' />"
- 
     try:
-        ret = ret + fontlabel + "</span>"
+        print "Attempting to load tree from cache"
+        pkl_file = open(TREE_CACHE_FILE, 'rb')
+        tree = pickle.load(pkl_file)
+        pkl_file.close()
     except:
-        print "fontlabel has type", type(fontlabel)
-        raise
+        print "Fail... Building huge tree and caching it"
+        tree = makeFontTree(somefonts, font_matrix)
 
-    return ret
-
-
-def makeExampleText(x):
-    fontname = realFontName(somefonts[x]).replace("&", "&amp;")
-    css_fontname = fontname.replace("'", "\\000027")
-
-    ret = "<span class='font_entry'><span class='font_text' style='font-family:\"" 
-    ret = ret + css_fontname + "\"'>"
-    for c in "AaBbCcDdEe":
-        ret = ret + c
-    return ret + "</span> (" + fontname + ")</span>"
+        output = open(TREE_CACHE_FILE, 'wb')
+        pickle.dump(tree, output, -1)
+        output.close()
 
 
-f = open('tree.html', 'w')
-f.write(makeHtmlHeader("FontClustr - Master Tree", 0))
-f.write(tree.to_html(lambda x : "<a href='" + FONT_CACHE_DIR + "/" + somefonts[x] + "/index.html'>" + somefonts[x] + "</a>"))
-f.write("</body></html>")
-f.close()
+    tree.printout(lambda x: allfonts[x])
 
-f = open('tree_images.html', 'w')
-f.write(makeHtmlHeader("FontClustr - Master Tree with Letter Images", 0))
-f.write(tree.to_html(makeExampleImages))
-f.write("</body></html>")
-f.close()
- 
-f = open('tree_text.html', 'w')
-f.write(makeFontClustrHeader())
-f.write(tree.to_html(makeExampleText))
-f.write("</body></html>")
-f.close()
+
+    #helper funcs
+    def makeExampleImages(x):
+        letters = "AaBbCc"
+        fontname = somefonts[x]
+        fontlabel = realFontName(somefonts[x]).replace("&", "&amp;")
+        ret = "<span class='font_entry'>"
+        for c in letters:
+            ret = ret + "<img src='" + FONT_CACHE_DIR + "/" + fontname + "/" + c + CHAR_IMG_EXT + "' />"
+
+        try:
+            ret = ret + fontlabel + "</span>"
+        except:
+            print "fontlabel has type", type(fontlabel)
+            raise
+
+        return ret
+
+
+    def makeExampleText(x):
+        fontname = realFontName(somefonts[x]).replace("&", "&amp;")
+        css_fontname = fontname.replace("'", "\\000027")
+
+        ret = "<span class='font_entry'><span class='font_text' style='font-family:\"" 
+        ret = ret + css_fontname + "\"'>"
+        for c in "AaBbCcDdEe":
+            ret = ret + c
+        return ret + "</span> (" + fontname + ")</span>"
+
+
+
+
+    f = open('tree.html', 'w')
+    f.write(makeHtmlHeader("FontClustr - Master Tree", 0))
+    f.write(tree.to_html(lambda x : "<a href='" + FONT_CACHE_DIR + "/" + somefonts[x] + "/index.html'>" + somefonts[x] + "</a>"))
+    f.write("</body></html>")
+    f.close()
+
+    f = open('tree_images.html', 'w')
+    f.write(makeHtmlHeader("FontClustr - Master Tree with Letter Images", 0))
+    f.write(tree.to_html(makeExampleImages))
+    f.write("</body></html>")
+    f.close()
+
+    f = open('tree_text.html', 'w')
+    f.write(makeFontClustrHeader())
+    f.write(tree.to_html(makeExampleText))
+    f.write("</body></html>")
+    f.close()
+
+
+if __name__ == "__main__":
+    mymain()
