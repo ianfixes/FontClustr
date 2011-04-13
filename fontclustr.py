@@ -86,7 +86,7 @@ def mkdir(path):
         if err.errno != errno.EEXIST:
             raise
 
-class FontclustrBlankChar(Exception):
+class BlankChar(Exception):
     pass
 
 class cv_char(object):
@@ -228,13 +228,13 @@ class cv_char(object):
             #get bounding box (left, top, right, bottom) and determine width and height (wd/ht)
             bb = img.getbbox()
             if None is bb:
-                raise FontclustrBlankChar
+                raise BlankChar
             (bb_l, bb_t, bb_r, bb_b) = bb
             wd = bb_r - bb_l
             ht = bb_b - bb_t
 
 
-            if CHAR_IMG_SIZE < wd or CHAR_IMG_SIZE < ht:
+            if CHAR_IMG_SIZE <= wd or CHAR_IMG_SIZE <= ht:
                 #crop aggressively: imgsize minus a 1px border. calc new bounds
                 cis2 = CHAR_IMG_SIZE - 2
                 nb_l = bb_l - ((cis2 - wd) / 2)
