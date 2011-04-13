@@ -184,6 +184,8 @@ class FontDB(object):
                     msg_callback("zero-width\t" + both_names)
                 else:
                     msg_callback(both_names + "\tRUNTIME ERROR: " + ri)
+            except fontclustr.BlankChar:
+                msg_callback("blank-char\t" + both_names)
             except Exception as inst:
                 e_t = str(type(inst))
                 e_r = repr(inst)
