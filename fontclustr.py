@@ -31,7 +31,6 @@ import os
 import sys
 import time
 import Image
-import gd
 import errno
 import math
 import pygame
@@ -65,7 +64,7 @@ FONT_SPECIFIER_NAME_ID = 4
 FONT_SPECIFIER_FAMILY_ID = 1
 
 FONT_CACHE_DIR = "cache"
-CHAR_IMG_SIZE = 100
+CHAR_IMG_SIZE = 200
 SAFETY_MARGIN = 0.85
 CHAR_SET = mkCharSet()
 CHAR_IMG_EXT = ".png"
@@ -74,7 +73,7 @@ TREE_CACHE_FILE = FONT_CACHE_DIR + os.path.sep + "master_tree.pkl"
 
 CACHE_LIMIT = 1200000
 
-def fuckoff(img):
+def showquit(img):
     img.show()
     sys.exit(1)
 
@@ -90,9 +89,10 @@ class BlankChar(Exception):
     pass
 
 class cv_char(object):
-    def __init__(self, fontname, charname):
+    def __init__(self, fontname, charname, imgsize):
         self.c = charname
         self.fontname = fontname
+        self.imgsize = imgsize
         self.filename = self.get_cache_file() #str(charFile(fontname, charname))
 
         self.img = None
@@ -129,15 +129,15 @@ class cv_char(object):
 
     # doesn't seem to produce improvement... actually, i think it hurts 
     def toLogPolar(img):
-        scale = CHAR_IMG_SIZE / math.log(CHAR_IMG_SIZE)
+        scale = self.imgsize / math.log(self.imgsize)
         
         #convert to color, else logpolar crashes
-        clr = opencv.cvCreateImage(opencv.cvSize(CHAR_IMG_SIZE, CHAR_IMG_SIZE), 8, 3);
+        clr = opencv.cvCreateImage(opencv.cvSize(self.imgsize, self.imgsize), 8, 3);
         opencv.cvCvtColor(img, clr, opencv.CV_GRAY2RGB)
         
-        dst = cv.cvCreateImage(cv.cvSize(CHAR_IMG_SIZE, CHAR_IMG_SIZE), 8, 3);
+        dst = cv.cvCreateImage(cv.cvSize(self.imgsize, self.imgsize), 8, 3);
         opencv.cvLogPolar(clr, dst, 
-                      opencv.cvPoint2D32f(CHAR_IMG_SIZE / 2, CHAR_IMG_SIZE / 2), 
+                      opencv.cvPoint2D32f(self.imgsize / 2, self.imgsize / 2), 
                       scale, opencv.CV_WARP_FILL_OUTLIERS)
 
         #convert to grayscale
@@ -201,15 +201,15 @@ class cv_char(object):
         #create a white-on-black image of a character in the given font, double-sized
         def char_render():
             font = pygame.font.Font(pygame.font.match_font(self.fontname), 
-                                    int(math.floor(CHAR_IMG_SIZE * SAFETY_MARGIN))
+                                    int(math.floor(self.imgsize * SAFETY_MARGIN))
                                     )
 
 
-            surface = pygame.Surface ((CHAR_IMG_SIZE * 2, CHAR_IMG_SIZE * 2), depth=8)
+            surface = pygame.Surface ((self.imgsize * 2, self.imgsize * 2), depth=8)
             surface.fill ((0, 0, 0))
             
             sf = font.render (self.c, False, (255, 255, 255))
-            surface.blit (sf, (CHAR_IMG_SIZE * 0.5, CHAR_IMG_SIZE * 0.5))
+            surface.blit (sf, (self.imgsize * 0.5, self.imgsize * 0.5))
             
             #MEMORY LEAK, no fault of mine.
             #http://pygame.motherhamster.org/bugzilla/show_bug.cgi?id=43
@@ -221,7 +221,7 @@ class cv_char(object):
         #crop an image, centering the character based on bounding box, single-sized
         def char_center(img_string):
 
-            img = Image.fromstring("P", (CHAR_IMG_SIZE * 2, CHAR_IMG_SIZE * 2), img_string)
+            img = Image.fromstring("P", (self.imgsize * 2, self.imgsize * 2), img_string)
             img = img.point(lambda p: 255 if p > 0 else 0)  #threshold
             img = img.convert("1")                          #to b/w
 
@@ -234,9 +234,9 @@ class cv_char(object):
             ht = bb_b - bb_t
 
 
-            if CHAR_IMG_SIZE <= wd or CHAR_IMG_SIZE <= ht:
+            if self.imgsize <= wd or self.imgsize <= ht:
                 #crop aggressively: imgsize minus a 1px border. calc new bounds
-                cis2 = CHAR_IMG_SIZE - 2
+                cis2 = self.imgsize - 2
                 nb_l = bb_l - ((cis2 - wd) / 2)
                 nb_t = bb_t - ((cis2 - ht) / 2)
                 nb_r = nb_l + cis2
@@ -251,15 +251,15 @@ class cv_char(object):
             ht = bb_b - bb_t
 
             #offsets will be negative
-            nb_l = (wd - CHAR_IMG_SIZE) / 2
-            nb_t = (ht - CHAR_IMG_SIZE) / 2
-            nb_r = nb_l + CHAR_IMG_SIZE
-            nb_b = nb_t + CHAR_IMG_SIZE
+            nb_l = (wd - self.imgsize) / 2
+            nb_t = (ht - self.imgsize) / 2
+            nb_r = nb_l + self.imgsize
+            nb_b = nb_t + self.imgsize
 
             img = img.crop((nb_l, nb_t, nb_r, nb_b))
                 
             img.save(self.get_cache_file())
-            #fuckoff(img)
+            #showquit(img)
 
         char_center(char_render())
 
@@ -267,7 +267,9 @@ class cv_char(object):
  
     #build filename for specific font/char
     def get_cache_file(self):
-        relative = FONT_CACHE_DIR + os.path.sep + self.fontname + os.path.sep + self.c + CHAR_IMG_EXT
+        reldir =  FONT_CACHE_DIR + os.path.sep+ self.fontname+ os.path.sep
+        thefile = str(self.imgsize) + "." + self.c + CHAR_IMG_EXT
+        relative = reldir + thefile
         absolute = os.getcwd() + os.path.sep + relative
         return relative
 
@@ -275,12 +277,13 @@ class cv_char(object):
 
 
 class cv_font(object):
-    def __init__(self, charset, fontname):
+    def __init__(self, charset, fontname, imgsize):
         self.charset = charset
         self.fontname = fontname
+        self.imgsize = imgsize
         self.chars = {}
         for c in self.charset:
-            self.chars[c] = cv_char(self.fontname, c)
+            self.chars[c] = cv_char(self.fontname, c, self.imgsize)
             
     def distance_from(self, another_cv_font):
         dist = 0
@@ -302,7 +305,7 @@ class cv_font(object):
 
     def cache(self):
         
-        uniqueness = CHAR_IMG_EXT + "." + str(CHAR_IMG_SIZE) + "." + "".join(self.charset)
+        uniqueness = CHAR_IMG_EXT + "." + str(self.imgsize) + "." + "".join(self.charset)
         doneflag = self.get_cache_dir() + os.path.sep + "done" + uniqueness
 
         if os.path.exists(doneflag):
@@ -369,7 +372,7 @@ def cacheFonts(allfonts):
         print "cacheing", percentdone, fontname
 
         try:
-            fontobject = cv_font(CHAR_SET, fontname)
+            fontobject = cv_font(CHAR_SET, fontname, CHAR_IMG_SIZE)
             fontobject.cache()
 
         except KeyboardInterrupt:
@@ -450,7 +453,7 @@ def makeFontMatrix(font_list):
             if CACHE_LIMIT < len(CHAR_SET) * len(mycache) * CHAR_IMG_SIZE:
                 rmkey = mycache.keys()[0]
                 del mycache[rmkey]
-            mycache[name] = cv_font(CHAR_SET, name)
+            mycache[name] = cv_font(CHAR_SET, name, CHAR_IMG_SIZE)
         return mycache[name]
 
     #we could do this during init if we handled symmetry better during reduction
@@ -505,6 +508,7 @@ def deMissingfontify(font_list, font_matrix):
 
 # where the magic happens
 def makeFontTree(font_list, matrix):
+    print "making font tree from a list of", len(font_list)
 
     #initialize tree(s) for the shittiest agglomerative clustering algo ever written
     # (but in fairness, i ONLY have distances to work with -- not dimensions)
@@ -864,7 +868,8 @@ def mymain():
 
         print "removing null fonts"
         for f in allfonts:
-            if cv_font(CHAR_SET, f).is_null():
+            if cv_font(CHAR_SET, f, CHAR_IMG_SIZE).is_null():
+                print "removing null font", f
                 allfonts.remove(f)
 
         print "done\n\n", len(allfonts), "fonts left\n"

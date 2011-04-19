@@ -32,7 +32,6 @@ import sys
 import os
 import errno
 import math
-import PythonMagick
 import pygame
 import string
 import time 
@@ -47,6 +46,7 @@ import fontclustr
 
 DB_FILENAME = "fontclustr.db"
 
+CHAR_IMG_SIZE = 200
 
 CACHE_CHAR_LIMIT = 2000000
 
@@ -103,7 +103,7 @@ class FontDB(object):
             c.execute("select count(*) from metric")
             c.execute("select count(*) from charset")
             c.execute("select count(*) from distance_font")
-            c.execute("select count(*) from distance_char")
+            #c.execute("select count(*) from distance_char")
             msg_callback("DB Structure OK")
         except:
             msg_callback("Error with structure, trashing DB and rebuilding")
@@ -118,7 +118,7 @@ class FontDB(object):
         c.close()
 
     #check that fonts in the db match the supplied list
-    def CheckFonts(self, fontlist, progress_callback, msg_callback):
+    def CheckFonts(self, fontlist, progress_callback, msg_callback, dialog_obj):
         c = self.db.cursor()
         c.execute("update font set present = 0")
         i = 0
@@ -127,13 +127,15 @@ class FontDB(object):
 
         for f in fontlist:
             #prep db record
-            fontobject = fontclustr.cv_font(self.FullCharset(), f)
+            fontobject = fontclustr.cv_font(self.FullCharset(), f, CHAR_IMG_SIZE)
             rfn = fontobject.realName()
             font_id = 0
 
             #we can skip this
             (_, skip) = progress_callback(i, rfn)
-            if skip: return
+            if skip: 
+                dialog_obj.success = False
+                return
 
             c.execute("select font_id from font where pygame_name = ?", (f,))
             row = c.fetchone()
@@ -256,7 +258,7 @@ class FontDB(object):
                 if CACHE_CHAR_LIMIT < len(self.FullCharset()) * len(mycache):
                     rmkey = mycache.keys()[0]
                     del mycache[rmkey]
-                mycache[pygame_name] = fontclustr.cv_font(self.CharsetOf(charset_id), pygame_name)
+                mycache[pygame_name] = fontclustr.cv_font(self.CharsetOf(charset_id), pygame_name, CHAR_IMG_SIZE)
             return mycache[pygame_name]
 
         #get font list and make a lookup table
@@ -289,8 +291,9 @@ class FontDB(object):
         left join distance_font on (distance_font.a_font_id = fontpairs.afont_id 
                                 and distance_font.b_font_id = fontpairs.bfont_id 
                                 and distance_font.metric_id = ? 
-                                and distance_font.charset_id = ?)
-        """, (metric_id, charset_id))
+                                and distance_font.charset_id = ?
+                                and distance_font.imgsize_px = ?)
+        """, (metric_id, charset_id, CHAR_IMG_SIZE))
 
         donework = 0
         for row in c:
@@ -310,7 +313,7 @@ class FontDB(object):
 
             if not distance is None:
                 pass 
-                print "DB!"
+                #print "DB!"
             else:
                 f1 = getCachedFont(font_list[i]["pygame_name"])
                 f2 = getCachedFont(font_list[j]["pygame_name"])
@@ -318,9 +321,14 @@ class FontDB(object):
                 distance = f1.distance_from(f2)
 
                 c2.execute("""
-                    insert into distance_font(a_font_id, b_font_id, metric_id, charset_id, distance)
-                    values(?,?,?,?,?)
-                    """, (afont_id, bfont_id, metric_id, charset_id, distance))
+                    insert into distance_font(a_font_id, 
+                                              b_font_id, 
+                                              metric_id, 
+                                              charset_id, 
+                                              imgsize_px, 
+                                              distance)
+                    values(?, ?, ?, ?, ?, ?)
+                    """, (afont_id, bfont_id, metric_id, charset_id, CHAR_IMG_SIZE, distance))
                 
             matrix[i][j] = distance
             matrix[j][i] = distance
@@ -341,6 +349,8 @@ class FontDB(object):
 class MainWindow(wx.Frame):
     def __init__(self, *args, **kwargs):
         wx.Frame.__init__(self, *args, **kwargs)
+
+        self.fonts_loaded = False
 
         pygame.init ()
 
@@ -367,6 +377,8 @@ class MainWindow(wx.Frame):
 
         
     def loadFonts(self):
+        if self.fonts_loaded: return
+
         allfonts = pygame.font.get_fonts()
         allfonts.sort()
 
@@ -384,13 +396,23 @@ class MainWindow(wx.Frame):
                                 )
         dlg.SetSize((600,100))
 
-        self.fontdb.CheckFonts(allfonts, dlg.Update, self.LogItem)
+        dlg.success = True
+
+        self.fontdb.CheckFonts(allfonts, dlg.Update, self.LogItem, dlg)
         dlg.Destroy()
-        self.LogItem("Loading and caching complete")
+        if dlg.success:
+            self.LogItem("Loading and caching complete")
+        else:
+            self.LogItem("Loading and caching aborted")
         wx._misc.Sleep(0.1)
+        self.fonts_loaded = dlg.success
 
 
     def loadMatrix(self):
+        self.loadFonts()
+        if not self.fonts_loaded:
+            self.LogItem("Can't proceed without loading fonts first")
+            return
         self.LogItem("Calculating font distances - this may take a while")
 
         numfonts = len(self.fontdb.GetFontList())

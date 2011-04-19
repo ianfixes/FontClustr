@@ -40,9 +40,10 @@ create table distance_font(
     b_font_id integer not null,
     metric_id integer not null,
     charset_id integer not null,
+    imgsize_px integer not null,
     distance real not null,
 
-    primary key (a_font_id, b_font_id, metric_id, charset_id),
+    primary key (a_font_id, b_font_id, metric_id, charset_id, imgsize_px),
     foreign key (a_font_id) references font (font_id),
     foreign key (b_font_id) references font (font_id),
     foreign key (metric_id) references metric (metric_id),
@@ -50,19 +51,19 @@ create table distance_font(
 );
 
 
-drop table if exists distance_char;
+-- drop table if exists distance_char;
 
-create table distance_char(
-    a_font_id integer not null,
-    b_font_id integer not null,
-    metric_id integer not null,
-    thechar text not null,
-    distance real not null,
+-- create table distance_char(
+--     a_font_id integer not null,
+--     b_font_id integer not null,
+--     metric_id integer not null,
+--     thechar text not null,
+--     distance real not null,
 
-    primary key (a_font_id, b_font_id, metric_id, thechar),
-    foreign key (a_font_id) references font (font_id),
-    foreign key (b_font_id) references font (font_id),
-    foreign key (metric_id) references metric (metric_id)
-);
+--     primary key (a_font_id, b_font_id, metric_id, thechar),
+--     foreign key (a_font_id) references font (font_id),
+--     foreign key (b_font_id) references font (font_id),
+--     foreign key (metric_id) references metric (metric_id)
+-- );
 
 
