@@ -753,8 +753,13 @@ function toggleSize_h(li_elem, openup)
 
   <div class="tabbertab">
     <h2>FontClustr</h2>
-    <p style='width:50em;'><a href="http://tinylittlelife.org/?cat=16">FontClustr</a> was written by <a href="http://www.linkedin.com/in/ikatz">Ian Katz</a> in 2010.  Hopefully it will be obsolete (incorporated
-       into mainstream font-selection widgets) by 2011!
+    <p style='width:50em;'><a href="http://tinylittlelife.org/?cat=16">FontClustr</a> 
+     was written by <a href="http://www.linkedin.com/in/ikatz">Ian Katz</a> in 2010.  
+     Hopefully it will be obsolete (incorporated
+     into mainstream font-selection widgets) by 2011!
+    </p>
+    <p><b>New:</b> as of August, 2011, you can click the colored bars to toggle visibility of 
+     fonts.
     </p>
   </div>
 
