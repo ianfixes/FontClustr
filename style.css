@@ -32,6 +32,7 @@ a:active
 .font_entry
 {
     white-space:nowrap;
+    font-size:12pt;
 }
 
 .font_entry img

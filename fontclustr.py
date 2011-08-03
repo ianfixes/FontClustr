@@ -666,6 +666,84 @@ function updateText() {
     }
     document.getElementsByTagName("body")[0].style.backgroundColor = "#" + newbg;
 }
+
+
+function toggleSize(e, li_elem)
+{
+    if (!e) var e = window.event;
+    e.cancelBubble = true;
+    if (e.stopPropagation) e.stopPropagation();
+
+    // "6.9px" is a flag for the text being toggled shut
+    var openup = "6.9px" == li_elem.style.fontSize;
+
+    toggleSize_h(li_elem, openup);
+}
+
+
+function toggleSize_h(li_elem, openup)
+{
+    var lis = li_elem.parentNode.childNodes;
+    for (var i = 0; i < lis.length; i++)
+    {
+        if ("LI" == lis[i].nodeName)
+        {
+            var inner_ul = lis[i].childNodes[0];
+            var inner_li = inner_ul.childNodes[1];
+
+            if (openup)
+            {
+                lis[i].style.fontSize         = "1px";
+                inner_ul.style.paddingTop     = "20px";
+                inner_ul.style.paddingBottom  = "20px";
+            }
+            else
+            {
+                lis[i].style.fontSize         = "6.9px";
+                inner_ul.style.paddingTop     = "2px";
+                inner_ul.style.paddingBottom  = "2px";
+            }
+
+            if (!inner_li.childNodes[0]) continue;
+
+            //do text if we have text
+            if ("UL" == inner_li.childNodes[0].nodeName)
+            {
+                // recurse
+                child_ul   = inner_li.childNodes[0];
+                child_lis  = child_ul.childNodes;
+                for (var ii = 0; ii < child_lis.length; ii++)
+                {
+                    if ("LI" == child_lis[ii].nodeName)
+                        toggleSize_h(inner_li, openup);
+                }
+            }
+            else if ("SPAN" == inner_li.childNodes[0].nodeName)
+            {
+                var fontname = inner_li.childNodes[0];
+                var fonttext = fontname.childNodes[0];
+
+                if (openup)
+                {
+                    fontname.style.fontSize  = "12pt";
+                    fonttext.style.display   = "inline";
+                }
+                else
+                {
+                    fontname.style.fontSize  = "8pt";
+                    fonttext.style.display   = "none";
+                }
+            }
+            else
+            {
+                alert(inner_li.childNodes[0].nodeName);
+            }
+
+        }
+    }
+
+}
+
  -->
 </script>
 

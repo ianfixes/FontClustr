@@ -78,11 +78,12 @@ class tree(object):
     def to_html(self, leaf_func):
         def to_html_h(atree, leaf_func, s):
             sp = s * " "
+            li_event = "<li onClick='toggleSize(event, this);'>"
             if TREE_LEAF == atree.type():
                 return sp + "<li>" + leaf_func(atree.ptr) + "</li>\n"
             else:
-                ltside = sp + "<li><ul>\n" + to_html_h(atree.lt, leaf_func, s + 1) + sp + "</ul></li>\n"
-                rtside = sp + "<li><ul>\n" + to_html_h(atree.rt, leaf_func, s + 1) + sp + "</ul></li>\n"
+                ltside = sp + li_event + "<ul>\n" + to_html_h(atree.lt, leaf_func, s + 1) + sp + "</ul></li>\n"
+                rtside = sp + li_event + "<ul>\n" + to_html_h(atree.rt, leaf_func, s + 1) + sp + "</ul></li>\n"
                 return ltside + rtside
             
         return "<ul>\n" + to_html_h(self, leaf_func, 1) + "</ul>\n"
