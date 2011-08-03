@@ -1,0 +1,243 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+ <title>FontClustr - A Better Way To Choose Fonts, by Ian Katz</title>
+ <meta http-equiv='content-type' content='text/html; charset=UTF-8' />
+ <link rel='stylesheet' type='text/css' href='style.css' />
+ <link rel='stylesheet' type='text/css' href='tabber.css' />
+
+ <script type="text/javascript" src="tabber.js"></script>
+
+ <script type="text/javascript">
+  <!--
+function getElementsByClassName(classname, node) {
+    if (!node) node = document.getElementsByTagName("body")[0];
+    var a = [];
+    var re = new RegExp('\\b' + classname + '\\b');
+    var els = node.getElementsByTagName("*");
+    for (var i = 0, j = els.length; i < j; i++)
+        if (re.test(els[i].className))
+            a.push(els[i]);
+    return a;
+}
+
+function updateText() {
+    newtext = document.getElementById('newtext').value;
+    newsize = document.getElementById('newsize').value;
+    newfg = document.getElementById('newfgcolor').value;
+    newbg = document.getElementById('newbgcolor').value;
+
+
+    var fonts = getElementsByClassName("font_text");
+    for (var i = 0, j = fonts.length; i < j; i++)
+    {
+        f = fonts[i];
+        f.style.color = "#" + newfg;
+        f.style.fontSize = newsize;
+        f.innerHTML = newtext;
+    }
+
+    var uls = document.getElementsByTagName("ul");
+    for (var i = 0, j = uls.length; i < j; i++)
+    {
+        u = uls[i];
+        u.style.color = "#" + newfg;
+    }
+    
+    var fonts = getElementsByClassName("font_entry");
+    for (var i = 0, j = fonts.length; i < j; i++)
+    {
+        f = fonts[i];
+        f.style.color = "#" + newfg;
+    }
+    document.getElementsByTagName("body")[0].style.backgroundColor = "#" + newbg;
+}
+
+// FIXME: need to make this recursive
+// FIXME: need to make sure we toggle in one direction only
+function toggleSize(e, li_elem)
+{
+    if (!e) var e = window.event;
+    e.cancelBubble = true;
+    if (e.stopPropagation) e.stopPropagation();
+
+
+
+    var lis = li_elem.parentNode.childNodes;
+    for (var i = 0; i < lis.length; i++)
+    {
+        if (lis[i].style)
+        {
+            var inner_ul = lis[i].childNodes[0];
+            var inner_li = inner_ul.childNodes[1];
+            var fontname = inner_li.childNodes[0];
+            var fonttext = fontname.childNodes[0];
+
+            // "6.9px" is a flag for the text being toggled shut
+            if ("6.9px" == lis[i].style.fontSize)
+            {
+                lis[i].style.fontSize         = "1px";
+                inner_ul.style.paddingTop     = "20px";
+                inner_ul.style.paddingBottom  = "20px";
+                fontname.style.fontSize       = "12pt";
+                fonttext.style.display        = "inline";
+            }
+            else
+            {
+                lis[i].style.fontSize         = "6.9px";
+                inner_ul.style.paddingTop     = "2px";
+                inner_ul.style.paddingBottom  = "2px";
+                fontname.style.fontSize       = "8pt";
+                fonttext.style.display        = "none";
+            }
+
+        }
+    }
+}
+ -->
+</script>
+
+ </head>
+<body>
+<div class="tabber" id="tab1">
+
+  <div class="tabbertab">
+    <h2>FontClustr</h2>
+    <p style='width:50em;'><a href="http://tinylittlelife.org/?cat=16">FontClustr</a> was written by <a href="http://www.linkedin.com/in/ikatz">Ian Katz</a> in 2010.  Hopefully it will be obsolete (incorporated
+       into mainstream font-selection widgets) by 2011!
+    </p>
+  </div>
+
+  <div class="tabbertab">
+    <h2><a name="tab1">Text Attributes</a></h2>
+    <table class="text_attributes">
+     <tr>
+      <th>Sample Text</th>
+      <td><input type='text' id='newtext' value='AaBbCcDdEe' style='width:30em;' /></td>
+     </tr>
+     <tr>
+      <th>Font Size</th>
+      <td><input type='text' id='newsize' value='40px' style='width:10em;' /></td>
+     </tr>
+     <tr>
+      <th>Background Color #</th>
+      <td><input type='text' id='newbgcolor' value='000000' class='color' maxlength="6" /></td>
+     </tr>
+     <tr>
+      <th>Text Color #</th>
+      <td><input type='text' id='newfgcolor' value='FFFFFF' class='color' maxlength="6" /></td>
+     </tr>
+    </table>  
+    <input type='button' onClick='updateText();' value='Apply' style='float:right;'/>
+    <br style="clear:both;" />
+  </div>
+
+  <div class="tabbertab">
+    <h2>Thanks</h2>
+   The following software projects made FontClustr possible:
+   <ul>
+    <li><a href="http://opencv.willowgarage.com/wiki/">OpenCV</a></li>
+    <li><a href="http://www.pygame.org">PyGame</a></li>
+    <li><a href="http://www.imagemagick.org">PythonMagick</a></li>
+    <li><a href="http://sourceforge.net/projects/fonttools/">TTX/FontTools</a></li>
+    <li><a href="http://www.barelyfitz.com/projects/tabber/">Tabber</a></li>
+   </ul>
+  </div>
+
+  <div class="tabbertab" id="hideit">
+    <h2>Hide</h2>
+  </div>
+
+</div>
+<ul>
+ <li><ul>
+  <li><ul>
+   <li><ul>
+    <li><ul>
+     <li><ul>
+      <li><ul>
+       <li><ul>
+        <li><ul>
+         <li><ul>
+          <li style="border:1px dashed yellow;" onClick="toggleSize(event, this);"><ul>
+           <li style="border:1px dashed green;" onClick="toggleSize(event, this);"><ul>
+            <li style="border:1px dashed red;" onClick="toggleSize(event, this);"><span class='font_entry'><span class='font_text' style='font-family:"AlArabiya"'>AaBbCcDdEe</span> (AlArabiya)</span></li>
+           </ul></li>
+           <li><ul>
+            <li><span class='font_entry'><span class='font_text' style='font-family:"AlBattar"'>AaBbCcDdEe</span> (AlBattar)</span></li>
+           </ul></li>
+          </ul></li>
+          <li><ul>
+           <li><ul>
+            <li><span class='font_entry'><span class='font_text' style='font-family:"AlHor"'>AaBbCcDdEe</span> (AlHor)</span></li>
+           </ul></li>
+           <li><ul>
+            <li><span class='font_entry'><span class='font_text' style='font-family:"AlManzomah"'>AaBbCcDdEe</span> (AlManzomah)</span></li>
+           </ul></li>
+          </ul></li>
+         </ul></li>
+         <li><ul>
+          <li><ul>
+           <li><ul>
+            <li><span class='font_entry'><span class='font_text' style='font-family:"AlMohanad"'>AaBbCcDdEe</span> (AlMohanad)</span></li>
+           </ul></li>
+           <li><ul>
+            <li><span class='font_entry'><span class='font_text' style='font-family:"AlYarmook"'>AaBbCcDdEe</span> (AlYarmook)</span></li>
+           </ul></li>
+          </ul></li>
+          <li><ul>
+           <li><ul>
+            <li><span class='font_entry'><span class='font_text' style='font-family:"Arab"'>AaBbCcDdEe</span> (Arab)</span></li>
+           </ul></li>
+           <li><ul>
+            <li><span class='font_entry'><span class='font_text' style='font-family:"Cortoba"'>AaBbCcDdEe</span> (Cortoba)</span></li>
+           </ul></li>
+          </ul></li>
+         </ul></li>
+        </ul></li>
+        <li><ul>
+         <li><ul>
+          <li><ul>
+           <li><ul>
+            <li><span class='font_entry'><span class='font_text' style='font-family:"Dimnah"'>AaBbCcDdEe</span> (Dimnah)</span></li>
+           </ul></li>
+           <li><ul>
+            <li><span class='font_entry'><span class='font_text' style='font-family:"Electron"'>AaBbCcDdEe</span> (Electron)</span></li>
+           </ul></li>
+          </ul></li>
+          <li><ul>
+           <li><ul>
+            <li><span class='font_entry'><span class='font_text' style='font-family:"Granada"'>AaBbCcDdEe</span> (Granada)</span></li>
+           </ul></li>
+           <li><ul>
+            <li><span class='font_entry'><span class='font_text' style='font-family:"Graph"'>AaBbCcDdEe</span> (Graph)</span></li>
+           </ul></li>
+          </ul></li>
+         </ul></li>
+         <li><ul>
+          <li><ul>
+           <li><ul>
+            <li><span class='font_entry'><span class='font_text' style='font-family:"Hani"'>AaBbCcDdEe</span> (Hani)</span></li>
+           </ul></li>
+           <li><ul>
+            <li><span class='font_entry'><span class='font_text' style='font-family:"Haramain"'>AaBbCcDdEe</span> (Haramain)</span></li>
+           </ul></li>
+          </ul></li>
+          <li><ul>
+           <li><ul>
+            <li><span class='font_entry'><span class='font_text' style='font-family:"Hor"'>AaBbCcDdEe</span> (Hor)</span></li>
+           </ul></li>
+           <li><ul>
+            <li><span class='font_entry'><span class='font_text' style='font-family:"Japan"'>AaBbCcDdEe</span> (Japan)</span></li>
+           </ul></li>
+          </ul></li>
+         </ul></li>
+        </ul></li>
+       </ul></li>
+      </ul></li>
+     </ul></li>
+    </ul></li>
+   </ul></li>
+  </ul></li>
+ </ul></li>
+</ul>
+</body></html>
