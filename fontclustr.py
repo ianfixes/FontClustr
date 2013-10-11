@@ -27,21 +27,18 @@
 #*************************************************************************/
 
 
-import os
-import sys
-import time
-import Image
 import errno
 import math
-import pygame
-import string
-import numpy
+import os
 import pickle
+import string
+import sys
+import time
 
-import cv
-import opencv
-#from opencv import cv
-from opencv import highgui
+import cv2
+from PIL import Image
+import numpy
+import pygame
 from fontTools import ttLib
 
 import tree
@@ -102,9 +99,9 @@ class cv_char(object):
         self.tre = None
 
     #poor result
-    def shape_distance_from(self, another_cv_char, match_method = opencv.CV_CONTOURS_MATCH_I3):
-        #match_method can also be opencv.CV_CONTOURS_MATCH_I1 or I2
-        return opencv.cv.cvMatchShapes(
+    def shape_distance_from(self, another_cv_char, match_method = cv2.cv.CV_CONTOURS_MATCH_I3):
+        #match_method can also be cv2.cv.CV_CONTOURS_MATCH_I1 or I2
+        return cv2.cvMatchShapes(
             highgui.cvLoadImage(self.filename,            highgui.CV_LOAD_IMAGE_GRAYSCALE),
             highgui.cvLoadImage(another_cv_char.filename, highgui.CV_LOAD_IMAGE_GRAYSCALE),
             match_method,
@@ -112,19 +109,19 @@ class cv_char(object):
             )
 
     def contour_distance_from(self, another_cv_char, 
-                              method = opencv.CV_CONTOURS_MATCH_I2, 
+                              method = cv2.cv.CV_CONTOURS_MATCH_I2, 
                               doLogPolar = False):
-        #method can also be opencv.CV_CONTOURS_MATCH_I1 or I3
+        #method can also be cv2.cv.CV_CONTOURS_MATCH_I1 or I3
         self.make_contour(doLogPolar)
         another_cv_char.make_contour(doLogPolar)
-        return opencv.cv.cvMatchShapes(self.cnt, another_cv_char.cnt, method, 0)
+        return cv2.matchShapes(self.cnt, another_cv_char.cnt, method, 0)
 
 
     # this method may be better, but causes a lot of crashes in the openCV library...
     def tree_distance_from(self, another_cv_char):
         self.make_tree()
         another_cv_char.make_tree()
-        return opencv.cvMatchContourTrees(self.tre, another_cv_char.tre, 1, 0)
+        return cv2.cv.cvMatchContourTrees(self.tre, another_cv_char.tre, 1, 0)
         
 
     # doesn't seem to produce improvement... actually, i think it hurts 
@@ -132,17 +129,17 @@ class cv_char(object):
         scale = self.imgsize / math.log(self.imgsize)
         
         #convert to color, else logpolar crashes
-        clr = opencv.cvCreateImage(opencv.cvSize(self.imgsize, self.imgsize), 8, 3);
-        opencv.cvCvtColor(img, clr, opencv.CV_GRAY2RGB)
+        clr = cv2.cv.cvCreateImage(cv2.cv.cvSize(self.imgsize, self.imgsize), 8, 3);
+        cv2.cv.cvCvtColor(img, clr, cv2.cv.CV_GRAY2RGB)
         
         dst = cv.cvCreateImage(cv.cvSize(self.imgsize, self.imgsize), 8, 3);
-        opencv.cvLogPolar(clr, dst, 
-                      opencv.cvPoint2D32f(self.imgsize / 2, self.imgsize / 2), 
-                      scale, opencv.CV_WARP_FILL_OUTLIERS)
+        cv2.cv.cvLogPolar(clr, dst, 
+                      cv2.cv.cvPoint2D32f(self.imgsize / 2, self.imgsize / 2), 
+                      scale, cv2.cv.CV_WARP_FILL_OUTLIERS)
 
         #convert to grayscale
-        gry = opencv.cvCreateImage(opencv.cvGetSize(dst), 8, 1);
-        opencv.cvCvtColor(dst, gry, opencv.CV_RGB2GRAY)
+        gry = cv2.cv.cvCreateImage(cv2.cv.cvGetSize(dst), 8, 1);
+        cv2.cv.cvCvtColor(dst, gry, cv2.cv.CV_RGB2GRAY)
         return gry
 
     def vassert(self, expr):
@@ -154,26 +151,17 @@ class cv_char(object):
         if None != self.cnt:
             return
 
-        self.img = highgui.cvLoadImage(str(self.filename), highgui.CV_LOAD_IMAGE_GRAYSCALE)
+        self.img = cv2.imread(str(self.filename), cv2.CV_LOAD_IMAGE_GRAYSCALE)
+
         if doLogPolar:
             self.img = toLogPolar(self.img)
 
-        self.vassert(self.img)
+        self.vassert(len(self.img))
 
-        #image is already white on black, so i guess we dont need this
-        #self.edg = opencv.cvCreateImage(opencv.cvGetSize(self.img), 8, 1)
-        #opencv.cvThreshold(self.img, self.edg, 1, 255, opencv.CV_THRESH_BINARY)
+        self.cnt = cv2.findContours(self.img, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)[0][-1]
 
-        self.sto = opencv.cvCreateMemStorage (0)
-        self.vassert(self.sto)
-        nb_contours, self.cnt = opencv.cvFindContours (self.img, #self.edg,
-                                                       self.sto,
-                                                       opencv.cv.sizeof_CvContour,
-                                                       opencv.CV_RETR_TREE,
-                                                       opencv.CV_CHAIN_APPROX_NONE,
-                                                       opencv.cvPoint(0,0))
-
-        self.vassert(self.cnt)
+        self.vassert(self.cnt is not None)
+        self.vassert(len(self.cnt))
 
         del self.img
         self.img = None
@@ -188,7 +176,7 @@ class cv_char(object):
         if None == self.img:
             self.make_contour()
         if None == self.tre:
-            self.tre = opencv.cvCreateContourTree(self.cnt, self.sto, 0)
+            self.tre = cv2.cv.cvCreateContourTree(self.cnt, self.sto, 0)
 
 
 
@@ -755,8 +743,8 @@ function toggleSize_h(li_elem, openup)
     <h2>FontClustr</h2>
     <p style='width:50em;'><a href="http://tinylittlelife.org/?cat=16">FontClustr</a> 
      was written by <a href="http://www.linkedin.com/in/ikatz">Ian Katz</a> in 2010.  
-     Hopefully it will be obsolete (incorporated
-     into mainstream font-selection widgets) by 2011!
+     Hopefully it will become obsolete (incorporated
+     into mainstream font-selection widgets)!
     </p>
     <p><b>New:</b> as of August, 2011, you can click the colored bars to toggle visibility of 
      fonts.

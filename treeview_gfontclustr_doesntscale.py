@@ -22,28 +22,26 @@ You should have received a copy of the GNU General Public License
 along with FontClustr.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import wxversion
-wxversion.select("2.8")
-
-import wx
-import sqlite3
-import sys 
-import os
 import errno
 import math
-import PythonMagick
-import pygame
-import string
-import numpy
-import time 
-import pygame
+import os
 import pickle
+import sqlite3
+import string
+import sys
+import time
 
+import numpy
+import pygame
+import PythonMagick
+import wxversion
+wxversion.select("2.8")
+import wx
 from wx.lib.wordwrap import wordwrap
 from fontTools import ttLib
 
-DB_FILENAME = "fontclustr.db"
 
+DB_FILENAME = "fontclustr.db"
 
 
 class CharsetChooser(wx.MultiChoiceDialog):

@@ -22,27 +22,26 @@ You should have received a copy of the GNU General Public License
 along with FontClustr.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import wxversion
-wxversion.select("2.8")
-
-import wx
-import types
-import sqlite3
-import sys 
-import os
 import errno
 import math
-import pygame
-import string
-import time 
-import pygame
+import os
 import pickle
+import string
+import sys
+import time
 import traceback
+import types
 
-from wx.lib.wordwrap import wordwrap
+import wxversion
+wxversion.select("2.8")
+import wx
+import sqlite3
+import pygame
 from fontTools import ttLib
+from wx.lib.wordwrap import wordwrap
 
 import fontclustr
+
 
 DB_FILENAME = "fontclustr.db"
 
