@@ -103,7 +103,7 @@ class FontDB(object):
             msg_callback("DB Structure OK")
         except:
             msg_callback("Error with structure, trashing DB and rebuilding")
-            c.executescript(open("fontclustr_schema.sql").read())
+            c.executescript(open("schema_fontclustr.sql").read())
 
         c.close()
 
