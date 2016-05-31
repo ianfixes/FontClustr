@@ -38,9 +38,12 @@ Probably other packages, your feedback is appreciated.
 OSX Support
 -----------
 
-You need to install opencv, and this is currently BROKEN.
+You need to install opencv; I used the instructions here:
+https://jjyap.wordpress.com/2014/05/24/installing-opencv-2-4-9-on-mac-osx-with-python-support/
 
-You need a python2.6 virtualenv.  
+
+
+You need a python2.6 virtualenv.
 
 You need to edit the bin/activate script of that virtualenv to add:
  alias python='arch -i386 python'
@@ -57,7 +60,6 @@ Usage
 
 Run FontClustr as "python fontclustr.py" or make `fontclustr.py` executable and run it directly.
 
-There is experimental support for a GUI version of FontClustr called `gfontclustr.py` that caches results. 
+There is experimental support for a GUI version of FontClustr called `gfontclustr.py` that caches results.
 
 Right now, it sucks.  Eventually it will be interactive.  "python gfontclustr.py"
-
