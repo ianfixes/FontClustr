@@ -52,8 +52,8 @@ class CharsetChooser(wx.MultiChoiceDialog):
         selected = []
         for i, c in enumerate(FontDB.FullCharset()):
             if c in charset_contents:
-                selected.append(i)  
- 
+                selected.append(i)
+
         self.SetSelections(selected)
 
     def GetSelectedCharset(self):
@@ -122,13 +122,13 @@ class FontDB(object):
 
             #we can skip this
             (_, skip) = progress_callback(i, rfn)
-            if skip: 
+            if skip:
                 dialog_obj.success = False
                 return
 
             c.execute("select font_id from font where pygame_name = ?", (f,))
             row = c.fetchone()
-            
+
 
             if None == row:
                 c.execute("insert into font(name, pygame_name, present, ok) values(?,?,1,0)", (rfn, f))
@@ -208,7 +208,7 @@ class FontDB(object):
             fc = fc + c + lc[i]
 
         return list("AaBbCcGgHhKkOoPpTtXx")
-        #return list(fc + "1234567890")    
+        #return list(fc + "1234567890")
 
 
     def mkdir(self, path):
@@ -240,7 +240,7 @@ class FontDB(object):
         mycache = {} # speeds up font distance comparisons
         def getCachedFont(pygame_name):
             if pygame_name in mycache:
-                pass 
+                pass
                 #print "hit!\t\t", pygame_name
             else:
                 #print "\tmiss!\t" + pygame_name
@@ -256,7 +256,7 @@ class FontDB(object):
         id2idx = {}
         for i, font in enumerate(font_list):
             id2idx[font["font_id"]] = i
-            
+
         #initialize matrix to all 0's, get the cached distances from DB (plus holes)
         matrix = [[0 for col in range(numfonts)] for row in range(numfonts)]
 
@@ -265,21 +265,21 @@ class FontDB(object):
         progress_callback(0, "Caching distances")
         c.execute(
         """
-        select fontpairs.afont_id, 
-               fontpairs.bfont_id, 
-               distance_font.distance 
+        select fontpairs.afont_id,
+               fontpairs.bfont_id,
+               distance_font.distance
         from (
-            select afont.font_id afont_id, 
-                   bfont.font_id bfont_id 
-            from font as afont, 
-                 font as bfont 
-            where afont.ok <> 0 
+            select afont.font_id afont_id,
+                   bfont.font_id bfont_id
+            from font as afont,
+                 font as bfont
+            where afont.ok <> 0
               and bfont.ok <> 0
               and afont.font_id < bfont.font_id
-            ) fontpairs 
-        left join distance_font on (distance_font.a_font_id = fontpairs.afont_id 
-                                and distance_font.b_font_id = fontpairs.bfont_id 
-                                and distance_font.metric_id = ? 
+            ) fontpairs
+        left join distance_font on (distance_font.a_font_id = fontpairs.afont_id
+                                and distance_font.b_font_id = fontpairs.bfont_id
+                                and distance_font.metric_id = ?
                                 and distance_font.charset_id = ?
                                 and distance_font.imgsize_px = ?)
         """, (metric_id, charset_id, CHAR_IMG_SIZE))
@@ -292,7 +292,7 @@ class FontDB(object):
             distance = row[2]
             i = id2idx[afont_id]
             j = id2idx[bfont_id]
-            
+
             mylabel = font_list[i]["name"] + " vs " + font_list[j]["name"]
             #print mylabel
             (dialog_obj.fontclustr_continue, skipit) = progress_callback(donework, mylabel)
@@ -301,7 +301,7 @@ class FontDB(object):
                 return matrix, id2idx
 
             if not distance is None:
-                pass 
+                pass
                 #print "DB!"
             else:
                 f1 = getCachedFont(font_list[i]["pygame_name"])
@@ -310,15 +310,15 @@ class FontDB(object):
                 distance = f1.distance_from(f2)
 
                 c2.execute("""
-                    insert into distance_font(a_font_id, 
-                                              b_font_id, 
-                                              metric_id, 
-                                              charset_id, 
-                                              imgsize_px, 
+                    insert into distance_font(a_font_id,
+                                              b_font_id,
+                                              metric_id,
+                                              charset_id,
+                                              imgsize_px,
                                               distance)
                     values(?, ?, ?, ?, ?, ?)
                     """, (afont_id, bfont_id, metric_id, charset_id, CHAR_IMG_SIZE, distance))
-                
+
             matrix[i][j] = distance
             matrix[j][i] = distance
             donework = donework + 1
@@ -354,7 +354,7 @@ class MainWindow(wx.Frame):
         #fixme: font metric / charset selections
 
         self.loadFonts()
-        
+
         #self.loadMatrix()
 
     def loadDatabase(self):
@@ -364,7 +364,7 @@ class MainWindow(wx.Frame):
         self.LogItem("Checking DB structure")
         self.fontdb.CheckDBStructure(self.LogItem)
 
-        
+
     def loadFonts(self):
         if self.fonts_loaded: return
 
@@ -427,19 +427,19 @@ class MainWindow(wx.Frame):
                 print "User aborted"
                 dlg.Destroy()
                 return False
-            
+
             self.LogItem("Fonts loaded into matrix form")
             dlg.Destroy()
             return True
-        
+
         except Exception as inst:
             self.LogItem(traceback.format_exc(inst))
             dlg.Destroy()
             return False
 
-        
+
     def setupScreen(self):
-        main_sizer = wx.BoxSizer(wx.VERTICAL)        
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
 
         """
         column1 = wx.BoxSizer(wx.VERTICAL)
@@ -449,7 +449,7 @@ class MainWindow(wx.Frame):
 
         column3.Add( SOME_CLASS(self, ...), 1, wx.EXPAND | wx.BORDER)
 
-        main_sizer.Add(column1, 1, wx.EXPAND | wx.BORDER)        
+        main_sizer.Add(column1, 1, wx.EXPAND | wx.BORDER)
         main_sizer.Add(column2, 1, wx.EXPAND | wx.BORDER)
         main_sizer.Add(column3, 1, wx.EXPAND | wx.BORDER)
 
@@ -471,7 +471,7 @@ class MainWindow(wx.Frame):
 
         self.log = wx.TextCtrl(self, -1, style = wx.TE_MULTILINE | wx.TE_READONLY)
         row1.Add(self.log, 1, wx.EXPAND)
-        
+
         main_sizer.Add(row1, 1, wx.EXPAND)
 
         self.SetSizerAndFit(main_sizer)
@@ -479,8 +479,8 @@ class MainWindow(wx.Frame):
 
     def LogItem(self, item):
         self.log.AppendText(time.strftime("(%H:%M:%S) " + item + os.linesep))
-        
-        
+
+
     def setupMenu(self):
         ## Set Up The Menu
         menu1 = wx.Menu()
@@ -516,17 +516,17 @@ class MainWindow(wx.Frame):
 
         # Then we call wx.AboutBox giving it that info object
         wx.AboutBox(info)
-        
 
-            
+
+
     def menuNewThing(self,e):
         self.loadMatrix()
 
-        
+
     def menuExit(self,e):
         print "Exit"
         self.Close()
-        
+
 
 
 
@@ -578,7 +578,7 @@ class tree(object):
         if ptr == self: return true
         if TREE_LEAF == self.type(): return False
         return self.lt.contains(ptr) or self.rt.contains(ptr)
-    
+
 
     def to_html(self, leaf_func):
         def to_html_h(atree, leaf_func, s):
@@ -589,16 +589,16 @@ class tree(object):
                 ltside = sp + "<li><ul>\n" + to_html_h(atree.lt, leaf_func, s + 1) + sp + "</ul></li>\n"
                 rtside = sp + "<li><ul>\n" + to_html_h(atree.rt, leaf_func, s + 1) + sp + "</ul></li>\n"
                 return ltside + rtside
-            
-        return "<ul>\n" + to_html_h(self, leaf_func, 1) + "</ul>\n"
-        
 
-    # 
+        return "<ul>\n" + to_html_h(self, leaf_func, 1) + "</ul>\n"
+
+
+    #
     # links to "far" fonts: how?
     # maybe mirror on the tree?
-    # 
+    #
     # as we descend the tree, keep a pointer to the "other branch" when we call one side?
-    # 
+    #
     """
     def namedSubtrees(self):
         def nst_h(atree, other_side, next_hop, acc):
@@ -612,7 +612,7 @@ class tree(object):
                 return rightside
 
         nst_h(
-       """         
+       """
 
 
 
@@ -624,13 +624,13 @@ class branch(tree):
     def set_branches(self, lt, rt):
         self.lt = lt
         self.rt = rt
-    
+
     def type(self):
         return TREE_BRANCH
 
-    
+
 class leaf(tree):
-    
+
     def __init__(self):
         self.ptr = None
 
@@ -640,7 +640,7 @@ class leaf(tree):
 
 
 
-            
+
 def GFontClustrMain():
     app = wx.App()
     frame = MainWindow(None, -1, "FontClustr: Better Font Organization")

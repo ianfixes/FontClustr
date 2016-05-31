@@ -63,7 +63,7 @@ class tree(object):
         if ptr == self: return true
         if TREE_LEAF == self.type(): return False
         return self.lt.contains(ptr) or self.rt.contains(ptr)
-    
+
 
     def to_html(self, leaf_func):
         def to_html_h(atree, leaf_func, s):
@@ -75,16 +75,16 @@ class tree(object):
                 ltside = sp + li_event + "<ul>\n" + to_html_h(atree.lt, leaf_func, s + 1) + sp + "</ul></li>\n"
                 rtside = sp + li_event + "<ul>\n" + to_html_h(atree.rt, leaf_func, s + 1) + sp + "</ul></li>\n"
                 return ltside + rtside
-            
-        return "<ul>\n" + to_html_h(self, leaf_func, 1) + "</ul>\n"
-        
 
-    # 
+        return "<ul>\n" + to_html_h(self, leaf_func, 1) + "</ul>\n"
+
+
+    #
     # links to "far" fonts: how?
     # maybe mirror on the tree?
-    # 
+    #
     # as we descend the tree, keep a pointer to the "other branch" when we call one side?
-    # 
+    #
     """
     def namedSubtrees(self):
         def nst_h(atree, other_side, next_hop, acc):
@@ -98,7 +98,7 @@ class tree(object):
                 return rightside
 
         nst_h(
-       """         
+       """
 
 
 
@@ -110,16 +110,15 @@ class branch(tree):
     def set_branches(self, lt, rt):
         self.lt = lt
         self.rt = rt
-    
+
     def type(self):
         return TREE_BRANCH
 
-    
+
 class leaf(tree):
-    
+
     def __init__(self):
         self.ptr = None
 
     def type(self):
         return TREE_LEAF
-

@@ -42,8 +42,8 @@ class CharsetChooser(wx.MultiChoiceDialog):
         selected = []
         for i, c in enumerate(FontDB.FullCharset()):
             if c in charset_contents:
-                selected.append(i)  
- 
+                selected.append(i)
+
         self.SetSelections(selected)
 
     def GetSelectedCharset(self):
@@ -142,7 +142,7 @@ class FontDB(object):
         for i, c in enumerate(uc):
             fc = fc + c + lc[i]
 
-        return list(fc + "1234567890")    
+        return list(fc + "1234567890")
 
 
     # turn pygame's "arialblack" into "Arial Black" so browsers can use it
@@ -186,10 +186,10 @@ class FontDB(object):
         def renderChar(font, c, outname):
             surface = pygame.Surface ((CHAR_IMG_SIZE * 2, CHAR_IMG_SIZE * 2), depth=8)
             surface.fill ((0, 0, 0))
-            
+
             sf = font.render (c, False, (255, 255, 255))
             surface.blit (sf, (CHAR_IMG_SIZE * 0.5, CHAR_IMG_SIZE * 0.5))
-            
+
             pygame.image.save(surface, outname)
 
 
@@ -197,16 +197,16 @@ class FontDB(object):
         def centerChar(outname):
             outname = str(outname)
             img = PythonMagick.Image(outname)
-            
+
             bb = img.boundingBox()
-            
+
             newbb = PythonMagick._PythonMagick.Geometry(
-                CHAR_IMG_SIZE, 
-                CHAR_IMG_SIZE, 
+                CHAR_IMG_SIZE,
+                CHAR_IMG_SIZE,
                 bb.xOff() - ((CHAR_IMG_SIZE - bb.width()) / 2),
                 bb.yOff() - ((CHAR_IMG_SIZE - bb.height()) / 2),
                 )
-            
+
             #FIXME: double this up to create a 1 px black border... should fix "elegante" problem
             img.crop(newbb)
             img.write(outname)
@@ -222,7 +222,7 @@ class FontDB(object):
         try:
             self.mkdir(fontdir)
 
-            font = pygame.font.Font(pygame.font.match_font(fontname), 
+            font = pygame.font.Font(pygame.font.match_font(fontname),
                                     int(math.floor(CHAR_IMG_SIZE * SAFETY_MARGIN))
                                     )
 
@@ -306,7 +306,7 @@ class TreePanel(wx.Panel):
                 f.SetFaceName(fontface)
                 self.tree.SetItemFont(wxitem, f)
                 self.tree.SetPyData(wxitem, None)
-                
+
 
             if TREE_LEAF == atree.type():
                 item = self.tree.AppendItem(current_root, "rhubarb")
@@ -358,7 +358,7 @@ class TreePanel(wx.Panel):
     def OnRightUp(self, event):
         pt = event.GetPosition();
         item, flags = self.tree.HitTest(pt)
-        if item:        
+        if item:
             print("OnRightUp: %s (manually starting label edit)\n"
                                % self.tree.GetItemText(item))
             self.tree.EditLabel(item)
@@ -464,7 +464,7 @@ class MainWindow(wx.Frame):
         self.LogItem("Checking DB structure")
         self.fontdb.CheckDBStructure(self.LogItem)
 
-        
+
     def loadFonts(self):
         allfonts = pygame.font.get_fonts()
         allfonts.sort()
@@ -480,13 +480,13 @@ class MainWindow(wx.Frame):
                                 #| wx.PD_ESTIMATED_TIME
                                 | wx.PD_REMAINING_TIME
                                 )
-            
+
         self.fontdb.LoadFonts(allfonts, dlg.Update, self.LogItem)
         dlg.Destroy()
         self.LogItem("Loading and caching complete")
         wx._misc.Sleep(0.1)
 
-                
+
         TREE_CACHE_FILE = FONT_CACHE_DIR + os.path.sep + "master_tree.pkl"
 
         fonttree = None
@@ -501,10 +501,10 @@ class MainWindow(wx.Frame):
         self.tree.LoadItems(fonttree, self.fontdb)
 
 
-        
-        
+
+
     def setupScreen(self):
-        main_sizer = wx.BoxSizer(wx.VERTICAL)        
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
 
         """
         column1 = wx.BoxSizer(wx.VERTICAL)
@@ -514,7 +514,7 @@ class MainWindow(wx.Frame):
 
         column3.Add( SOME_CLASS(self, ...), 1, wx.EXPAND | wx.BORDER)
 
-        main_sizer.Add(column1, 1, wx.EXPAND | wx.BORDER)        
+        main_sizer.Add(column1, 1, wx.EXPAND | wx.BORDER)
         main_sizer.Add(column2, 1, wx.EXPAND | wx.BORDER)
         main_sizer.Add(column3, 1, wx.EXPAND | wx.BORDER)
 
@@ -536,7 +536,7 @@ class MainWindow(wx.Frame):
 
         self.log = wx.TextCtrl(self, -1, style = wx.TE_MULTILINE | wx.TE_READONLY)
         row1.Add(self.log, 1, wx.EXPAND)
-        
+
 
         self.tree = TreePanel(self)
 
@@ -548,8 +548,8 @@ class MainWindow(wx.Frame):
 
     def LogItem(self, item):
         self.log.AppendText(time.strftime("(%H:%M:%S) " + item + os.linesep))
-        
-        
+
+
     def setupMenu(self):
         ## Set Up The Menu
         menu1 = wx.Menu()
@@ -585,16 +585,16 @@ class MainWindow(wx.Frame):
 
         # Then we call wx.AboutBox giving it that info object
         wx.AboutBox(info)
-        
 
-            
+
+
     def menuNewConnection(self,e):
         pass
-        
+
     def menuExit(self,e):
         print "Exit"
         self.Close()
-        
+
 
 
 
@@ -646,7 +646,7 @@ class tree(object):
         if ptr == self: return true
         if TREE_LEAF == self.type(): return False
         return self.lt.contains(ptr) or self.rt.contains(ptr)
-    
+
 
     def to_html(self, leaf_func):
         def to_html_h(atree, leaf_func, s):
@@ -657,16 +657,16 @@ class tree(object):
                 ltside = sp + "<li><ul>\n" + to_html_h(atree.lt, leaf_func, s + 1) + sp + "</ul></li>\n"
                 rtside = sp + "<li><ul>\n" + to_html_h(atree.rt, leaf_func, s + 1) + sp + "</ul></li>\n"
                 return ltside + rtside
-            
-        return "<ul>\n" + to_html_h(self, leaf_func, 1) + "</ul>\n"
-        
 
-    # 
+        return "<ul>\n" + to_html_h(self, leaf_func, 1) + "</ul>\n"
+
+
+    #
     # links to "far" fonts: how?
     # maybe mirror on the tree?
-    # 
+    #
     # as we descend the tree, keep a pointer to the "other branch" when we call one side?
-    # 
+    #
     """
     def namedSubtrees(self):
         def nst_h(atree, other_side, next_hop, acc):
@@ -680,7 +680,7 @@ class tree(object):
                 return rightside
 
         nst_h(
-       """         
+       """
 
 
 
@@ -692,13 +692,13 @@ class branch(tree):
     def set_branches(self, lt, rt):
         self.lt = lt
         self.rt = rt
-    
+
     def type(self):
         return TREE_BRANCH
 
-    
+
 class leaf(tree):
-    
+
     def __init__(self):
         self.ptr = None
 
@@ -708,7 +708,7 @@ class leaf(tree):
 
 
 
-            
+
 def GFontClustrMain():
     app = wx.App()
     frame = MainWindow(None, -1, "FontClustr: Better Font Organization")

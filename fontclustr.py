@@ -40,7 +40,7 @@ def mkCharSet():
     ret = ""
     for i, c in enumerate(uc):
         ret = ret + c + lc[i]
-    
+
     #return "AaBbCc"
     #return ret + "1234567890" # "AaBbCc"
     return "AaBbCcGgHhKkOoPpTtXx"
@@ -97,8 +97,8 @@ class cv_char(object):
             0,
             )
 
-    def contour_distance_from(self, another_cv_char, 
-                              method = cv2.cv.CV_CONTOURS_MATCH_I2, 
+    def contour_distance_from(self, another_cv_char,
+                              method = cv2.cv.CV_CONTOURS_MATCH_I2,
                               doLogPolar = False):
         #method can also be cv2.cv.CV_CONTOURS_MATCH_I1 or I3
         self.make_contour(doLogPolar)
@@ -111,19 +111,19 @@ class cv_char(object):
         self.make_tree()
         another_cv_char.make_tree()
         return cv2.cv.cvMatchContourTrees(self.tre, another_cv_char.tre, 1, 0)
-        
 
-    # doesn't seem to produce improvement... actually, i think it hurts 
+
+    # doesn't seem to produce improvement... actually, i think it hurts
     def toLogPolar(img):
         scale = self.imgsize / math.log(self.imgsize)
-        
+
         #convert to color, else logpolar crashes
         clr = cv2.cv.cvCreateImage(cv2.cv.cvSize(self.imgsize, self.imgsize), 8, 3);
         cv2.cv.cvCvtColor(img, clr, cv2.cv.CV_GRAY2RGB)
-        
+
         dst = cv.cvCreateImage(cv.cvSize(self.imgsize, self.imgsize), 8, 3);
-        cv2.cv.cvLogPolar(clr, dst, 
-                      cv2.cv.cvPoint2D32f(self.imgsize / 2, self.imgsize / 2), 
+        cv2.cv.cvLogPolar(clr, dst,
+                      cv2.cv.cvPoint2D32f(self.imgsize / 2, self.imgsize / 2),
                       scale, cv2.cv.CV_WARP_FILL_OUTLIERS)
 
         #convert to grayscale
@@ -159,7 +159,7 @@ class cv_char(object):
     #make a tree... shorthand func
     def makeTree(id):
         tre[id] = cv.cvCreateContourTree(cnt[id], sto[id], 0)
-    
+
 
     def make_tree(self):
         if None == self.img:
@@ -177,17 +177,17 @@ class cv_char(object):
 
         #create a white-on-black image of a character in the given font, double-sized
         def char_render():
-            font = pygame.font.Font(pygame.font.match_font(self.fontname), 
+            font = pygame.font.Font(pygame.font.match_font(self.fontname),
                                     int(math.floor(self.imgsize * SAFETY_MARGIN))
                                     )
 
 
             surface = pygame.Surface ((self.imgsize * 2, self.imgsize * 2), depth=8)
             surface.fill ((0, 0, 0))
-            
+
             sf = font.render (self.c, False, (255, 255, 255))
             surface.blit (sf, (self.imgsize * 0.5, self.imgsize * 0.5))
-            
+
             #MEMORY LEAK, no fault of mine.
             #http://pygame.motherhamster.org/bugzilla/show_bug.cgi?id=43
             #pygame.image.save(surface, self.filename)
@@ -221,7 +221,7 @@ class cv_char(object):
                 bb = (nb_l, nb_t, nb_r, nb_b)
 
             img = img.crop(bb)
-            
+
             #now un-crop, to center it
             (bb_l, bb_t, bb_r, bb_b) = bb
             wd = bb_r - bb_l
@@ -234,14 +234,14 @@ class cv_char(object):
             nb_b = nb_t + self.imgsize
 
             img = img.crop((nb_l, nb_t, nb_r, nb_b))
-                
+
             img.save(self.get_cache_file())
             #showquit(img)
 
         char_center(char_render())
 
 
- 
+
     #build filename for specific font/char
     def get_cache_file(self):
         reldir =  FONT_CACHE_DIR + os.path.sep+ self.fontname+ os.path.sep
@@ -261,7 +261,7 @@ class cv_font(object):
         self.chars = {}
         for c in self.charset:
             self.chars[c] = cv_char(self.fontname, c, self.imgsize)
-            
+
     def distance_from(self, another_cv_font):
         dist = 0
         for c in self.charset:
@@ -281,19 +281,19 @@ class cv_font(object):
         return None is pygame.font.match_font(self.fontname)
 
     def cache(self):
-        
+
         uniqueness = CHAR_IMG_EXT + "." + str(self.imgsize) + "." + "".join(self.charset)
         doneflag = self.get_cache_dir() + os.path.sep + "done" + uniqueness
 
         if os.path.exists(doneflag):
             #print "skipping", percentdone, fontname
-            return 
+            return
 
         mkdir(self.get_cache_dir())
-        
+
         for _, c in self.chars.iteritems():
             c.cache()
-                
+
         #mark as done... works unless user decides to delete some but not all dir contents
         mkdir(doneflag)
 
@@ -338,7 +338,7 @@ class cv_font(object):
 
 
 
-def cacheFonts(allfonts):    
+def cacheFonts(allfonts):
     outfonts = []
     mkdir(FONT_CACHE_DIR)
     totalfonts = len(allfonts)
@@ -361,7 +361,7 @@ def cacheFonts(allfonts):
             outfonts.append(fontname)
 
     print "processing 100%  done after", int(processedfonts), "fonts"
-    
+
     return outfonts
 
 
@@ -423,7 +423,7 @@ def makeFontMatrix(font_list):
 
     totalwork = (numfonts ** 2. - numfonts) / 2
     donework = 0
-    
+
     mycache = {}
     def getCachedFont(name):
         if not name in mycache:
@@ -457,7 +457,7 @@ def makeFontMatrix(font_list):
 def deZeroify(font_list, font_matrix):
     i = len(font_list)
     while i > 0:
-        i = i - 1 
+        i = i - 1
         if all(map(lambda x: x == 0, font_matrix[i])):
             print "Removing all-zero-distance", font_list[i]
             font_list = font_list[:i] + font_list[i+1:]
@@ -472,7 +472,7 @@ def deZeroify(font_list, font_matrix):
 def deMissingfontify(font_list, font_matrix):
     i = len(font_list)
     while i > 0:
-        i = i - 1 
+        i = i - 1
         if None is pygame.font.match_font(font_list[i]):
             print "Removing font-with-no-ttf-file", font_list[i]
             font_list = font_list[:i] + font_list[i+1:]
@@ -519,7 +519,7 @@ def makeFontTree(font_list, matrix):
                 if j == f1 or j == f2: continue
                 new_row.append(c)
             new_matrix.append(new_row)
-        
+
 
         # create new branch
         t1 = trees[f1]
@@ -531,7 +531,7 @@ def makeFontTree(font_list, matrix):
         new_trees.append(br)
 
 
-        #this code uses weighted averages to reconcile distances, 
+        #this code uses weighted averages to reconcile distances,
         # ... but doesn't produce great results
         """
         # calculate new row... last in the matrix, so the last row is 0
@@ -634,7 +634,7 @@ function updateText() {
         u = uls[i];
         u.style.color = "#" + newfg;
     }
-    
+
     var fonts = getElementsByClassName("font_entry");
     for (var i = 0, j = fonts.length; i < j; i++)
     {
@@ -730,12 +730,12 @@ function toggleSize_h(li_elem, openup)
 
   <div class="tabbertab">
     <h2>FontClustr</h2>
-    <p style='width:50em;'><a href="http://tinylittlelife.org/?cat=16">FontClustr</a> 
-     was written by <a href="http://www.linkedin.com/in/ikatz">Ian Katz</a> in 2010.  
+    <p style='width:50em;'><a href="http://tinylittlelife.org/?cat=16">FontClustr</a>
+     was written by <a href="http://www.linkedin.com/in/ikatz">Ian Katz</a> in 2010.
      Hopefully it will become obsolete (incorporated
      into mainstream font-selection widgets)!
     </p>
-    <p><b>New:</b> as of August, 2011, you can click the colored bars to toggle visibility of 
+    <p><b>New:</b> as of August, 2011, you can click the colored bars to toggle visibility of
      fonts.
     </p>
   </div>
@@ -759,7 +759,7 @@ function toggleSize_h(li_elem, openup)
       <th>Text Color #</th>
       <td><input type='text' id='newfgcolor' value='FFFFFF' class='color' maxlength="6" /></td>
      </tr>
-    </table>  
+    </table>
     <input type='button' onClick='updateText();' value='Apply' style='float:right;'/>
     <br style="clear:both;" />
   </div>
@@ -803,7 +803,7 @@ def makeFontWebPages(font_list, font_matrix):
         for f in fonts:
             ret = ret + makeEntry(font_list[f])
         return ret
-        
+
 
     #iterate through matrix
 
@@ -816,7 +816,7 @@ def makeFontWebPages(font_list, font_matrix):
         fonts_far  = []
         fonts_zero = []
 
-        
+
         #build out a webpage
         html = makeHtmlHeader("FontClustr - " + fontname)
         html = html + "\n<h1>" + fontname + "</h1>"
@@ -843,9 +843,9 @@ def makeFontWebPages(font_list, font_matrix):
                 d[i] = v
 
         index_and_val = sorted(d.items(), lambda x, y: cmp(x[1], y[1]))
-    
+
         #bomb out if the font sucks
-        if 0 == len(index_and_val): 
+        if 0 == len(index_and_val):
             html = html + "<h2>This font broke the distance calculation algorithm (all distances 0).</h2>"
         else:
 
@@ -887,11 +887,11 @@ def makeFontWebPages(font_list, font_matrix):
     mainindex.write("<h1>Fonts Processed</h1><ul>")
     for i, f in enumerate(font_list):
         mainindex.write("\n <li><a href='" + f + "/index.html'>" + f + "</a></li>")
-        
+
     mainindex.write("</ul></body></html>")
     mainindex.close()
 
-                        
+
 
 ####################################
 
@@ -1012,7 +1012,7 @@ def mymain():
         fontname = realFontName(somefonts[x]).replace("&", "&amp;")
         css_fontname = fontname.replace("'", "\\000027")
 
-        ret = "<span class='font_entry'><span class='font_text' style='font-family:\"" 
+        ret = "<span class='font_entry'><span class='font_text' style='font-family:\""
         ret = ret + css_fontname + "\"'>"
         for c in "AaBbCcDdEe":
             ret = ret + c
