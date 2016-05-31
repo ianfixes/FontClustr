@@ -6,7 +6,7 @@ FontClustr was conceived in January 2010 by Ian Katz.
 
 It uses computer vision algorithms to sort fonts by appearance.
 
-FontClustr is free software licensed under the terms of the GPLv3.
+FontClustr is free software licensed under the terms of the Apache 2.0 license.
 
 
 Installation

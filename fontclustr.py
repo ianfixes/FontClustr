@@ -3,26 +3,15 @@
 #/*************************************************************************
 #
 #    fontclustr.py: a program that clusters fonts based on their appearance
-#    
+#
 #    Copyright (C) 2010 Ian Katz
 #
 #    This software was written by Ian Katz
 #    contact: ifreecarve@gmail.com
 #
-#    This file is part of FontClustr.
 #
-#    FontClustr is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#    (at your option) any later version.
-#
-#    FontClustr is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
-#    along with FontClustr.  If not, see <http://www.gnu.org/licenses/>.
+#    You should have received a copy of the Apache 2.0 license
+#    along with FontClustr.  If not, see <http://www.apache.org/licenses/LICENSE-2.0>
 #
 #*************************************************************************/
 
