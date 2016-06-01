@@ -8,6 +8,8 @@ from fontTools import ttLib
 from progress import DiscreteProgress
 from PIL import Image, ImageFont, ImageDraw
 
+from cvfont import CVFont, CVChar
+
 # makes a directory even if it's already there
 def mkdir(path):
     try:
@@ -130,9 +132,9 @@ class FontBank(object):
             return image
 
 
-        #crop an image, centering the character based on bounding box, single-sized
+        # crop an image, centering the character based on bounding box, single-sized
         def char_center(img):
-            #get bounding box (left, top, right, bottom) and determine width and height (wd/ht)
+            # get bounding box (left, top, right, bottom) and determine width and height (wd/ht)
             bb = img.getbbox()
             if None is bb:
                 raise BlankChar
@@ -140,24 +142,24 @@ class FontBank(object):
             wd = bb_r - bb_l
             ht = bb_b - bb_t
 
-
-            if self.img_size <= wd or self.img_size <= ht:
-                #crop aggressively: imgsize minus a 1px border. calc new bounds
-                cis2 = self.img_size - 2
+            # contour generation will fail if the character touches the edge of the image,
+            # so crop with a 1px border in mind.  so cropped image size = img_size - 2
+            cis2 = self.img_size - 2
+            if cis2 <= wd or cis2 <= ht:
+                # crop aggressively, determine new bounds (nb)
                 nb_l = bb_l - ((cis2 - wd) / 2)
                 nb_t = bb_t - ((cis2 - ht) / 2)
                 nb_r = nb_l + cis2
                 nb_b = nb_t + cis2
                 bb = (nb_l, nb_t, nb_r, nb_b)
 
+            # crop to bounding box, then uncrop to center it
             img = img.crop(bb)
-
-            #now un-crop, to center it
             (bb_l, bb_t, bb_r, bb_b) = bb
             wd = bb_r - bb_l
             ht = bb_b - bb_t
 
-            #offsets will be negative
+            # offsets will be negative
             nb_l = (wd - self.img_size) / 2
             nb_t = (ht - self.img_size) / 2
             nb_r = nb_l + self.img_size
@@ -169,7 +171,7 @@ class FontBank(object):
 
         char_center(char_render()).save(filename)
 
-
+    # get the typeface name from the file
     def realFontName(self, fontfile):
         FONT_SPECIFIER_NAME_ID = 4
         FONT_SPECIFIER_FAMILY_ID = 1
@@ -198,13 +200,23 @@ class FontBank(object):
 
 
 
-    #build filename for specific font/char
+    # build filename for specific font/char
     def get_cache_dirname(self, font_name):
         relative = os.path.join(self.cache_dir, font_name)
         absolute = os.path.join(os.getcwd(), relative)
         return absolute
 
-    #build filename for specific font/char
+    # build filename for specific font/char
     def get_cache_filename(self, font_name, char):
         thefile = str(self.img_size) + "_" + char + "." + CHAR_IMG_EXT
         return os.path.join(self.get_cache_dirname(font_name), thefile)
+
+    # get a CVFont object (cache-backed)
+    def get_font(self, font_name):
+        return CVFont(self.char_set, font_name, self.get_cache_filename)
+
+    # get a CVChar object (cache-backed)
+    def get_char(self, font_name, char):
+        filename = self.get_cache_filename(font_name, char)
+        return CVChar(font_name, char, filename)
+
