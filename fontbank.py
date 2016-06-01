@@ -50,17 +50,25 @@ class FontBank(object):
 
     def unpickle_or_process(self):
         pkl_filename = os.path.join(self.cache_dir, FONTBANK_PICKLE_FILE)
+        pkl_valid = False
         try:
             print "Attempting to load fontbank from pickle"
             pkl_file = open(pkl_filename, 'rb')
-            (self.font_set, self.font_name, self.successful_caches) = pickle.load(pkl_file)
+            (char_set, self.font_set, self.font_name, self.successful_caches) = pickle.load(pkl_file)
             pkl_file.close()
             print "  Loaded fontbank from pickle!"
+            if set(char_set) == set(self.char_set):
+                pkl_valid = True
+            else:
+                print "  Pickled char set differs from current!"
         except:
+            pass
+
+        if not pkl_valid:
             print "Pickle FAIL... build data and cache it"
             self.build_fontbank()
             output = open(pkl_filename, 'wb')
-            pickle.dump((self.font_set, self.font_name, self.successful_caches), output, -1)
+            pickle.dump((self.char_set, self.font_set, self.font_name, self.successful_caches), output, -1)
             output.close()
             print "Pickled fontbank for next time"
 
