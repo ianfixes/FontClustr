@@ -36,7 +36,7 @@ class Progress(object):
         if error:
             print (" " * len(task_name)), " -- oops! ", error
         else:
-            percentdone = "[%02.0f%%]" % math.floor(ratio * 100)
+            percentdone = "[%02.02f%%]" % (ratio * 100)
             print task_name, percentdone
 
     def on_end(self, message):
@@ -52,7 +52,7 @@ class DiscreteProgress(Progress):
         super(DiscreteProgress, self).__init__()
 
     def on_begin(self, message):
-        self.last_increment = 0
+        self.last_increment = 0.0
         super(DiscreteProgress, self).on_begin(message)
 
     def on_advance(self, task_name, ratio, error = None):

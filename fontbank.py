@@ -5,7 +5,6 @@ import pickle
 
 from matplotlib import font_manager
 from fontTools import ttLib
-from progress import DiscreteProgress
 from PIL import Image, ImageFont, ImageDraw
 
 from cvfont import CVFont, CVChar
@@ -44,6 +43,8 @@ class FontBank(object):
         # computed stuff
         self.font_set = None
         self.font_name = None
+        self.font_family = None
+        self.font_subfamily = None
         self.successful_caches = None
         self.unpickle_or_process()
 
@@ -54,13 +55,18 @@ class FontBank(object):
         try:
             print "Attempting to load fontbank from pickle"
             pkl_file = open(pkl_filename, 'rb')
-            (char_set, self.font_set, self.font_name, self.successful_caches) = pickle.load(pkl_file)
+            (char_set,
+             self.font_set,
+             self.font_name,
+             self.font_family,
+             self.font_subfamily,
+             self.successful_caches) = pickle.load(pkl_file)
             pkl_file.close()
             print "  Loaded fontbank from pickle!"
             if set(char_set) == set(self.char_set):
                 pkl_valid = True
             else:
-                print "  Pickled char set differs from current!"
+                print "  Pickled charset differs from current!"
         except:
             pass
 
@@ -68,7 +74,12 @@ class FontBank(object):
             print "Pickle FAIL... build data and cache it"
             self.build_fontbank()
             output = open(pkl_filename, 'wb')
-            pickle.dump((self.char_set, self.font_set, self.font_name, self.successful_caches), output, -1)
+            pickle.dump((self.char_set,
+                         self.font_set,
+                         self.font_name,
+                         self.font_family,
+                         self.font_subfamily,
+                         self.successful_caches), output, -1)
             output.close()
             print "Pickled fontbank for next time"
 
@@ -79,7 +90,15 @@ class FontBank(object):
 
         # initialize directory, process fonts
         mkdir(self.cache_dir)
-        self.font_name = dict([(f, self.realFontName(f)) for f in self.font_set])
+        self.font_name = {}
+        self.font_family = {}
+        self.font_subfamily = {}
+        for f in self.font_set:
+            data = self.fontInfo(f)
+            self.font_name[f] = data[0]
+            self.font_family[f] = data[1]
+            self.font_subfamily[f] = data[2]
+
         self.cache_all_fonts()
 
 
@@ -179,33 +198,37 @@ class FontBank(object):
 
         char_center(char_render()).save(filename)
 
-    # get the typeface name from the file
-    def realFontName(self, fontfile):
-        FONT_SPECIFIER_NAME_ID = 4
-        FONT_SPECIFIER_FAMILY_ID = 1
+    # get the typeface name and family names from the file
+    def fontInfo(self, fontfile):
+        FAMILY_ID = 1
+        SUBFAMILY_ID = 2
+        NAME_ID = 4
+        PREFERRED_FAMILY_ID = 16
 
-        # http://starrhorne.com/posts/font_name_from_ttf_file/
-        def shortName(font):
-            """Get the short name from the font's names table"""
-            name = ""
-            family = ""
-            for record in font['name'].names:
-                if record.nameID == FONT_SPECIFIER_NAME_ID and not name:
-                    if '\000' in record.string:
-                        name = unicode(record.string, 'utf-16-be').encode('utf-8')
-                    else:
-                        name = record.string
-                elif record.nameID == FONT_SPECIFIER_FAMILY_ID and not family:
-                    if '\000' in record.string:
-                        family = unicode(record.string, 'utf-16-be').encode('utf-8')
-                    else:
-                        family = record.string
-                if name and family:
-                    break
-            return name, family
+        def decoded(val):
+            if '\000' in val:
+                return unicode(val, 'utf-16-be').encode('utf-8')
+            return unicode(val)
 
-        return unicode(shortName(ttLib.TTFont(fontfile))[1])
+        font = ttLib.TTFont(fontfile)
+        name = ""
+        family = ""
+        subfamily = ""
+        preferred_family = ""
+        for record in font['name'].names:
+            if record.langID not in [0, 1033]: continue
 
+            if record.nameID == NAME_ID and not name:
+                name = decoded(record.string)
+            elif record.nameID == FAMILY_ID and not family:
+                family = decoded(record.string)
+            elif record.nameID == SUBFAMILY_ID and not subfamily:
+                subfamily = decoded(record.string)
+            elif record.nameID == PREFERRED_FAMILY_ID and not preferred_family:
+                preferred_family = decoded(record.string)
+
+        # some fonts apparently have wrong names in field 1 and correct names in field 16
+        return name, (preferred_family if preferred_family else family), subfamily
 
 
     # build filename for specific font/char
@@ -227,4 +250,3 @@ class FontBank(object):
     def get_char(self, font_name, char):
         filename = self.get_cache_filename(font_name, char)
         return CVChar(font_name, char, filename)
-
