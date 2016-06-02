@@ -46,6 +46,7 @@ class FontBank(object):
         self.font_family = None
         self.font_subfamily = None
         self.successful_caches = None
+        self.successful_caches_names = None
         self.unpickle_or_process()
 
 
@@ -60,7 +61,8 @@ class FontBank(object):
              self.font_name,
              self.font_family,
              self.font_subfamily,
-             self.successful_caches) = pickle.load(pkl_file)
+             self.successful_caches,
+             self.successful_caches_names) = pickle.load(pkl_file)
             pkl_file.close()
             print "  Loaded fontbank from pickle!"
             if set(char_set) == set(self.char_set):
@@ -79,7 +81,8 @@ class FontBank(object):
                          self.font_name,
                          self.font_family,
                          self.font_subfamily,
-                         self.successful_caches), output, -1)
+                         self.successful_caches,
+                         self.successful_caches_names), output, -1)
             output.close()
             print "Pickled fontbank for next time"
 
@@ -87,6 +90,7 @@ class FontBank(object):
         # load fonts
         self.font_set = font_manager.findSystemFonts(fontpaths=None, fontext="ttf")
         self.successful_caches = {}
+        self.successful_caches_names = {}
 
         # initialize directory, process fonts
         mkdir(self.cache_dir)
@@ -117,9 +121,15 @@ class FontBank(object):
     # Cache all characters of one font
     def cache_one_font(self, font):
         font_name = self.font_name[font]
+
+        # detect dupes
+        if font_name in self.successful_caches_names:
+            self.progress.advance(1, font_name + " was already processed from " + self.successful_caches_names[font_name])
+            self.successful_caches[font] = False
+            return
+
         mkdir(self.get_cache_dirname(font_name))
 
-        self.successful_caches[font] = True
         for char in self.char_set:
             try:
                 self.cache_one_char(font, char)
@@ -136,6 +146,10 @@ class FontBank(object):
                 self.successful_caches[font] = False
             else:
                 self.progress.advance(1)
+
+        if font not in self.successful_caches:
+            self.successful_caches[font] = True
+            self.successful_caches_names[font_name] = font
 
 
     # Cache one of something
