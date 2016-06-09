@@ -1,0 +1,31 @@
+{
+  "name": "fontclustr",
+  "version": "1.0.0",
+  "description": "Visually compares fonts, generates hierarchical clusters",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ifreecarve/FontClustr.git"
+  },
+  "keywords": [
+    "typefaces",
+    "sorting",
+    "fonts",
+    "clustering",
+    "cv"
+  ],
+  "author": "Ian Katz",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/ifreecarve/FontClustr/issues"
+  },
+  "homepage": "https://github.com/ifreecarve/FontClustr#readme",
+  "dependencies": {
+    "d3": "^3.5.17",
+    "markov-cluster": "^1.2.12",
+    "minimist": "^1.2.0"
+  }
+}

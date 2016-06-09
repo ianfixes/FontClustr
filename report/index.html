@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<body>
+    <div id="renderList"></div>
+</body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
+<script>
+    // we have a set of regexps we want to apply to an input text.
+    // if any of those regexps match, we return the value attached to the regexp key
+    var fuzzyMatch = function (text, hash) {
+        for (var pattern in hash) {
+            if (-1 != text.search(new RegExp(pattern, "i"))) {
+                return hash[pattern];
+            }
+        }
+        return undefined;
+    };
+
+    // extract font style info from the font name
+    var fontStyle = function (subfamily) {
+        return fuzzyMatch(subfamily, {
+            "italic": "italic",
+            "oblique": "oblique"
+        });
+    };
+
+    // extract font weight quantity from the name
+    // weights from https://helpx.adobe.com/typekit/using/css-selectors.html
+    var fontWeight = function (subfamily) {
+        return fuzzyMatch(subfamily, {
+            "thin": 100,
+            "extra-light": 200,
+            "light": 300,
+            "regular": 400,
+            "book": 400,
+            "normal": 400,
+            "medium": 500,
+            "demi-bold": 600,
+            "bold": 700,
+            "heavy": 800,
+            "black": 900
+        });
+    };
+
+    // print out a nested list of font names, representing hierarchical clusters
+    // use style info and a charset
+    function renderStyledList(inputTree, rootHTMLElem, charset, fontInfo) {
+      var renderStyledListHelper = function(input, rootElem) {
+        var ul = document.createElement('ul');
+        rootElem.appendChild(ul);
+
+        for (var d of input) {
+            var li = document.createElement('li');
+            ul.appendChild(li);
+            if ((typeof d) === 'string') {
+                console.log(d);
+                var element = fontInfo[d];
+                li.innerHTML += d + " " + charset;
+                li.style["font-weight"] = fontWeight(element.subfamily);
+                li.style["font-style"] = fontStyle(element.subfamily);
+                li.style["font-family"] = element.family;
+            } else {
+                renderStyledListHelper(d, li);
+            }
+        }
+      }
+
+      renderStyledListHelper(inputTree, rootHTMLElem);
+    }
+
+    d3.json("distance_information_AaBbCcGgHhKkOoPpTtXx.json", function(json) {
+      // we need to map names to info
+      var fontHash = {};
+      for (var f of json.fonts) {
+        fontHash[f.name] = f;
+      }
+
+      d3.json("allClusters.json", function(tree) {
+          renderStyledList(tree, document.getElementById('renderList'), json.charset, fontHash);
+      });
+    });
+
+</script>
+</html>

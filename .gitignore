@@ -5,3 +5,4 @@ tree*.html
 master_tree.pkl
 fontclustr.db
 fontclustr.db-journal
+node_modules
