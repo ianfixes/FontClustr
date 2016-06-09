@@ -43,14 +43,6 @@ class CVChar(object):
         another_cv_char.make_contour()
         return cv2.matchShapes(self.cnt, another_cv_char.cnt, method, 0)
 
-
-    # this method may be better, but causes a lot of crashes in the openCV library...
-    def tree_distance_from(self, another_cv_char):
-        self.make_tree()
-        another_cv_char.make_tree()
-        return cv2.cv.cvMatchContourTrees(self.tre, another_cv_char.tre, 1, 0)
-
-
     def vassert(self, expr):
         if not expr:
             print "About to fail on", self.filename
@@ -60,12 +52,13 @@ class CVChar(object):
         if self.cnt is not None:
             return
 
-        self.img = cv2.imread(str(self.filename), cv2.CV_LOAD_IMAGE_GRAYSCALE)
+        self.img = cv2.imread(str(self.filename), cv2.IMREAD_GRAYSCALE)
 
         self.vassert(self.img is not None)
         self.vassert(self.img.data)
 
-        self.cnt = cv2.findContours(self.img, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)[0][-1]
+        contours, hierarchy = cv2.findContours(self.img, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+        self.cnt = contours[-1]
 
         self.vassert(self.cnt is not None)
         self.vassert(len(self.cnt))
@@ -73,14 +66,3 @@ class CVChar(object):
         del self.img
         self.img = None
         return
-
-    #make a tree... shorthand func
-    def makeTree(id):
-        tre[id] = cv.cvCreateContourTree(cnt[id], sto[id], 0)
-
-
-    def make_tree(self):
-        if None == self.img:
-            self.make_contour()
-        if None == self.tre:
-            self.tre = cv2.cv.cvCreateContourTree(self.cnt, self.sto, 0)
