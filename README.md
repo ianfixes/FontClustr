@@ -15,11 +15,9 @@ Installation
 FontClustr is written in Python 2 and requires the following libraries:
 
 - fonttools
-- numpy
 - opencv
 - Python Imaging Library (or Pillow)
-- pygame
-
+- numpy
 
 
 Linux Support
